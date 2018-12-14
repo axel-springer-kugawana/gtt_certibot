@@ -8,10 +8,10 @@ class Configuration:
 
         # Load configuration
         pkg_base = os.path.dirname(__file__)
-        config_file = ['{}/config/config.yml'.format(pkg_base)]
-        config_file_env = '{}/config/{}/config.yml'.format(
+        config_file = ['{}/../config/config.yml'.format(pkg_base)]
+        config_file_env = '{}/../config/{}/config.yml'.format(
             pkg_base, environment)
-        local_config_file = '{}/config/local_config.yml'.format(pkg_base)
+        local_config_file = '{}/../config/local_config.yml'.format(pkg_base)
         if os.path.exists(config_file_env):
             config_file.append(config_file_env)
         if os.path.exists(local_config_file):
