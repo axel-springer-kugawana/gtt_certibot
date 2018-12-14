@@ -1,0 +1,48 @@
+version: 2
+
+aliases:
+  - &defaults
+    docker:
+      - image: $KUGAWANA_ECR_SHARED_SERVICES/kugawana/docker-awscli-python3:latest
+    environment:
+      LAMBDA_PACKAGE: kugawana-gtt-yabot
+      LAMBDA_BUCKET: kugawana-gtt-prod-tools
+jobs:
+  build:
+    <<: *defaults
+    steps:
+      - checkout
+      - run:
+          name: Generate package
+          command: aws s3 cp s3://kugawana-gtt-dev-infra/scripts/lambda/build-py.sh - | bash
+      - persist_to_workspace:
+          root: /tmp/
+          paths:
+            - kugawana-gtt-yabot.zip
+  deploy:
+    <<: *defaults
+    steps:
+      - attach_workspace:
+          at: /tmp
+      - checkout
+      - run:
+          name: Deploy lambda
+          command: aws s3 cp s3://kugawana-gtt-dev-infra/scripts/lambda/deploy-py.sh - | bash
+      - store_artifacts:
+          path: /tmp/kugawana-gtt-yabot.zip
+          destination: kugawana-gtt-yabot.zip
+
+workflows:
+  version: 2
+  commit_workflow:
+    jobs:
+      - build:
+          context: kugawana_gtt-dev
+      - deploy:
+          context: kugawana_gtt-prod
+          requires:
+            - build
+          filters:
+            branches:
+              only:
+                - master
