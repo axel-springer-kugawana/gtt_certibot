@@ -27,13 +27,27 @@ class Yabot:
             if not data['token'] in config.allowed_input_tokens:
                 return "403 Forbidden"
 
-            # Check if in limited mode (only a admin users are allowed to talk with Yabot)
-            if config.limited_mode and not slack_event['user'] in config.admin_users:
-                reply = "Sorry, I'm not available for now. Please try again later. ;)"
+            if slack_event['channel_type'] == "im":
+                # Someone call me on private message
+
+                # Check if in limited mode (only a admin users are allowed to talk with Yabot)
+                if config.limited_mode and not slack_event['user'] in config.admin_users:
+                    reply = "Sorry, I'm not available for now. Please try again later. ;)"
+                else:
+                    reply = "ack im (" + slack_event['text'] + ")"
+
             else:
-                # TODO
-                text = slack_event["text"]
-                reply = text[::-1]
+                if slack_event['channel_type'] in ['channel', 'group']:
+                    # Someone call me on a channel
+
+                    # Check if in limited mode (only a admin users are allowed to talk with Yabot)
+                    if config.limited_mode and not slack_event['user'] in config.admin_users:
+                        return "204 No Content"
+                    else:
+                        reply = "ack channel (" + slack_event['text'] + ")"
+                else:
+                    return "204 No Content"
+
 
             channel_id = slack_event["channel"]
             data = urllib.parse.urlencode(
