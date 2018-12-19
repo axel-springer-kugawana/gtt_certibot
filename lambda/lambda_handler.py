@@ -1,5 +1,5 @@
 import os
-from yabot import Yabot
+from certification_management.yabot_certif import YabotCertif
 
 def handler(event, context):
     """This method is the start point for AWS lambda."""
@@ -8,5 +8,5 @@ def handler(event, context):
     except KeyError:
         environment = "dev"
 
-    yabot = Yabot(environment)
-    yabot.launch(event)
+    yabot_certif = YabotCertif(environment)
+    yabot_certif.launch(event)

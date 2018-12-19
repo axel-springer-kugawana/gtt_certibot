@@ -1,6 +1,6 @@
 import logging
 import urllib
-from certification_managment import *
+import certification_management
 from fake_data import init_fake_data
 from utils.configuration import Configuration
 
@@ -9,7 +9,7 @@ from utils.configuration import Configuration
 init_fake_data()
 
 
-class Yabot:
+class YabotCertif:
     def __init__(self, environment):
         """ Logging configuration """
         self.logger = logging.getLogger()

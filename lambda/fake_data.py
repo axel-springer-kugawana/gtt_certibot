@@ -1,9 +1,7 @@
-from certification_managment import *
+import certification_management
 
 
 def init_fake_data():
-    Certification.reset_cascade()
-
     Certification("Certif 1", "Level 1").add()
     Certification("Certif 2", "Level 2").add()
     Certification("Certif 3", "Level 3").add()
