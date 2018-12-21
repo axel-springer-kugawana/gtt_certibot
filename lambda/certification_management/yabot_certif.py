@@ -9,58 +9,84 @@ from utils.configuration import Configuration
 
 
 class YabotCertif:
-    def __init__(self, environment):
+    def __init__(self, environment, token, user_id, command, parameter, response_url):
         # Logging configuration
         self.logger = logging.getLogger()
         self.logger.setLevel(logging.INFO)
-        self.environment = environment
 
-    def launch(self, event):
+        self.environment = environment
+        self.token = token
+        self.user_id = user_id
+        self.command = command
+        self.parameter = parameter
+        self.response_url = response_url
+
+    def launch(self):
         # Application configuration
         config = Configuration(self.logger, self.environment)
 
         # Check event
-        if event['token'] in config.allowed_input_tokens \
-        and not(config.limited_mode and not event['user_id'] in config.admin_users):
-            if event['command'] == '/sendvoucher':
-                email = event['text']
-                user = User.get(email)
-                if user:
-                    if user.voucher_code:
-                        voucher = Voucher.get(user.voucher_code)
-                        return_text = "Hi! Your personal voucher code for " + voucher.certification_level + \
-                            " has been already requested by you: " + voucher.code + \
-                            ". Please note that your voucher code is valid until " + voucher.availability + "."
-                    else:
-                        voucher = Voucher.getAvailable(user.certification_level)
-                        if voucher:
-                            if user.attribuateVoucher(voucher):
-                                return_text = "Hi! Your personal voucher code for " + voucher.certification_level + \
-                                " has been requested by you: " + voucher.code + \
-                                ". Please note that your voucher code is valid until " + voucher.availability + "."
-                            else:
-                                return_text = "Oops! Something went wrong. " + \
-                                "Please make sure that you have entered the right email address and certification level and try again. " + \
-                                "If you are still facing trouble by the second time please contact @Saskia KÖTTING."
-                        else:
-                            return_text = "Hi! Unfortunately there are no more codes for this certification level available. " + \
-                            "Please contact @Saskia KÖTTING for more information and the ordering of new voucher codes."
-                else:
-                    return_text = "Hi! Unfortunately we couldn't find your personal voucher code in our data base. Please get back to @Saskia KÖTTING."
+        if self.token in config.allowed_input_tokens \
+        and not(config.limited_mode and not self.user_id in config.admin_users):
+            if self.command == '/sendvoucher':
+                return_text = self.sendVoucher()
 
-            elif event['command'] == '/adduser':
+            elif self.command == '/remindvoucher':
+                return_text = self.remindVoucher()
+
+            elif self.command == '/adduser':
                 return_text = "Ok, user added! (placeholder)"
 
             else:
-                return_text = "Unknown command (" + event['command'] + ")"
+                return_text = "Unknown command (" + self.command + ")"
 
             payload = {
-                'text': return_text,
-                'attachments': [{}]
+                'text': return_text
             }
             headers = {
                 'content-type': "application/json",
             }
 
-            response = requests.request("POST", event['response_url'], data=json.dumps(payload), headers=headers)
+            response = requests.request("POST", self.response_url, data=json.dumps(payload), headers=headers)
             print(response)
+
+    def sendVoucher(self):
+        user = User.get(self.parameter)
+        if user:
+            if user.voucher_code:
+                voucher = Voucher.get(user.voucher_code)
+                certification = Certification.get(voucher.certification_level)
+                return "Hi! Your personal voucher code for " + certification.name + \
+                    " has been already requested by you: " + voucher.code + \
+                    ". Please note that your voucher code is valid until " + voucher.availability + "."
+            else:
+                voucher = Voucher.getAvailable(user.certification_level)
+                certification = Certification.get(voucher.certification_level)
+                if voucher:
+                    if user.attribuateVoucher(voucher):
+                        return "Hi! Your personal voucher code for " + certification.name + \
+                        " has been requested by you: " + voucher.code + \
+                        ". Please note that your voucher code is valid until " + voucher.availability + "."
+                    else:
+                        return "Oops! Something went wrong. " + \
+                        "Please make sure that you have entered the right email address and certification level and try again. " + \
+                        "If you are still facing trouble by the second time please contact @Saskia KÖTTING."
+                else:
+                    return "Hi! Unfortunately there are no more codes for this certification level available. " + \
+                    "Please contact @Saskia KÖTTING for more information and the ordering of new voucher codes."
+        else:
+            return "Hi! Unfortunately we couldn't find your personal voucher code in our data base. Please get back to @Saskia KÖTTING."
+
+    def remindVoucher(self):
+        user = User.get(self.parameter)
+        if user:
+            if user.voucher_code:
+                voucher = Voucher.get(user.voucher_code)
+                certification = Certification.get(voucher.certification_level)
+                return "Hi! Your personal voucher code for " + certification.name + \
+                    " is: " + voucher.code + \
+                    ". Please note that your voucher code is valid until " + voucher.availability + "."
+            else:
+                return "You do not have requested yout personnal voucher code. Please use /sendvoucher command."
+        else:
+            return "Hi! Unfortunately we couldn't find your personal voucher code in our data base. Please get back to @Saskia KÖTTING."

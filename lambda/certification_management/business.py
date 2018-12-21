@@ -23,6 +23,12 @@ class Certification:
             return True
         return False
 
+    @classmethod
+    def get(cls, level):
+        dbcertifications = Certification.certifications.scan(FilterExpression=Attr('level').eq(level))['Items']
+        if len(dbcertifications) > 0:
+            return Certification(dbcertifications[0]['name'], dbcertifications[0]['level'])
+
 
 class User:
     users = boto3.resource('dynamodb').Table('awscert_user')
