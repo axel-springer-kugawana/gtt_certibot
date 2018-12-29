@@ -39,16 +39,18 @@ class YabotCertif:
 
             else:
                 return_text = "Unknown command (" + self.command + ")"
+        else:
+            return_text = "I'm under construction for now. Please be patient. ;)"
 
-            payload = {
-                'text': return_text
-            }
-            headers = {
-                'content-type': "application/json",
-            }
+        payload = {
+            'text': return_text
+        }
+        headers = {
+            'content-type': "application/json",
+        }
 
-            response = requests.request("POST", self.response_url, data=json.dumps(payload), headers=headers)
-            print(response)
+        response = requests.request("POST", self.response_url, data=json.dumps(payload), headers=headers)
+        print(response)
 
     def sendVoucher(self):
         user = User.get(self.parameter)
