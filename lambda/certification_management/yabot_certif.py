@@ -62,9 +62,9 @@ class YabotCertif:
                     " has been already requested by you: " + voucher.code + \
                     ". Please note that your voucher code is valid until " + voucher.availability + "."
             else:
-                voucher = Voucher.getAvailable(user.certification_level)
-                certification = Certification.get(voucher.certification_level)
-                if voucher:
+                try:
+                    voucher = Voucher.getAvailable(user.certification_level)
+                    certification = Certification.get(voucher.certification_level)
                     if user.attribuateVoucher(voucher):
                         return "Hi! Your personal voucher code for " + certification.name + \
                         " has been requested by you: " + voucher.code + \
@@ -73,7 +73,7 @@ class YabotCertif:
                         return "Oops! Something went wrong. " + \
                         "Please make sure that you have entered the right email address and certification level and try again. " + \
                         "If you are still facing trouble by the second time please contact @Saskia KÖTTING."
-                else:
+                except:
                     return "Hi! Unfortunately there are no more codes for this certification level available. " + \
                     "Please contact @Saskia KÖTTING for more information and the ordering of new voucher codes."
         else:
@@ -89,6 +89,6 @@ class YabotCertif:
                     " is: " + voucher.code + \
                     ". Please note that your voucher code is valid until " + voucher.availability + "."
             else:
-                return "You do not have requested yout personnal voucher code. Please use /sendvoucher command."
+                return "You did not request your personnal voucher code yet. Please use /sendvoucher command."
         else:
             return "Hi! Unfortunately we couldn't find your personal voucher code in our data base. Please get back to @Saskia KÖTTING."
