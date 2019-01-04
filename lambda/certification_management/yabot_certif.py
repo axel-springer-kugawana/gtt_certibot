@@ -42,14 +42,7 @@ class YabotCertif:
         else:
             return_text = "I'm under construction for now. Please be patient. ;)"
 
-        payload = {
-            'text': return_text
-        }
-        headers = {
-            'content-type': "application/json",
-        }
-
-        response = requests.request("POST", self.response_url, data=json.dumps(payload), headers=headers)
+        response = requests.request("POST", self.response_url, data=return_text)
         print(response)
 
     def sendVoucher(self):
