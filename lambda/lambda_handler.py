@@ -11,8 +11,11 @@ def handler(event, context):
     token = event['token']
     user_id = event['user_id']
     command = event['command']
-    text = event['text']
+    try:
+        text = event['text']
+    except:
+        text = ""   # Slash command has no text and is pretty straight forward
     response_url = event['response_url']
 
     yabot_certif = YabotCertif(environment, token, user_id, command, text, response_url)
-    yabot_certif.launch()
+    return yabot_certif.launch()

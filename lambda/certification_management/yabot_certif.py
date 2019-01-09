@@ -28,8 +28,8 @@ class YabotCertif:
         # Check event
         if self.token in config.allowed_input_tokens \
         and not(config.limited_mode and not self.user_id in config.admin_users):
-            if self.command == '/sendvoucher':
-                return_text = self.sendVoucher()
+            if self.command == '/getvoucher':
+                return_text = self.getVoucher()
 
             elif self.command == '/remindvoucher':
                 return_text = self.remindVoucher()
@@ -42,11 +42,10 @@ class YabotCertif:
         else:
             return_text = "I'm under construction for now. Please be patient. ;)"
 
-        response = requests.request("POST", self.response_url, data=return_text)
-        print(response)
+        return return_text
 
-    def sendVoucher(self):
-        user = User.get(self.parameter)
+    def getVoucher(self):
+        user = User.get(self.user_id)
         if user:
             if user.voucher_code:
                 voucher = Voucher.get(user.voucher_code)

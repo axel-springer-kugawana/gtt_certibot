@@ -33,13 +33,13 @@ class Certification:
 class User:
     users = boto3.resource('dynamodb').Table('awscert_user')
 
-    def __init__(self, email, certification_level, voucher_code=None):
-        self.email = email
+    def __init__(self, user_id, certification_level, voucher_code=None):
+        self.user_id = user_id
         self.certification_level = certification_level
         self.voucher_code = voucher_code
 
     def __str__(self):
-        str_format = "Email: " + self.email + \
+        str_format = "user_id: " + self.user_id + \
             ", certification_level: " + self.certification_level
         if self.voucher_code:
             str_format += ", voucher_code: " + self.voucher_code
@@ -48,32 +48,32 @@ class User:
         return str_format
 
     def add(self):
-        User.users.put_item(Item={'email': self.email, 'certification_level': self.certification_level})
+        User.users.put_item(Item={'user_id': self.user_id, 'certification_level': self.certification_level})
         return True
 
     def remove(self):
         if not self.voucher_code:
-            User.users.delete_item(Key={'email': self.email})
+            User.users.delete_item(Key={'user_id': self.user_id})
             return True
         return False
 
     def attribuateVoucher(self, voucher):
         if not self.voucher_code and self.certification_level == voucher.certification_level:
             self.voucher_code = voucher.code
-            User.users.update_item(Key={'email': self.email},
+            User.users.update_item(Key={'user_id': self.user_id},
                                    UpdateExpression='SET voucher_code = :voucher_code',
                                    ExpressionAttributeValues={':voucher_code': self.voucher_code})
             return True
         return False
 
     @classmethod
-    def get(cls, email):
-        dbusers = User.users.query(KeyConditionExpression=Key('email').eq(email))['Items']
+    def get(cls, user_id):
+        dbusers = User.users.query(KeyConditionExpression=Key('user_id').eq(user_id))['Items']
         if len(dbusers) > 0:
             try:
-                return User(dbusers[0]['email'], dbusers[0]['certification_level'], dbusers[0]['voucher_code'])
+                return User(dbusers[0]['user_id'], dbusers[0]['certification_level'], dbusers[0]['voucher_code'])
             except KeyError:
-                return User(dbusers[0]['email'], dbusers[0]['certification_level'])
+                return User(dbusers[0]['user_id'], dbusers[0]['certification_level'])
 
 
 class Voucher:
@@ -90,7 +90,7 @@ class Voucher:
             str_format += ", available until " + self.availability
         else:
             str_format += "already claimed by " + \
-            User.users.scan(FilterExpression=Attr('voucher_code').eq(self.code))['Items'][0]['email']
+            User.users.scan(FilterExpression=Attr('voucher_code').eq(self.code))['Items'][0]['user_id']
         return str_format
 
     def add(self):

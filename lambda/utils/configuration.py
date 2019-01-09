@@ -19,7 +19,6 @@ class Configuration:
         config = hiyapyco.load(config_file, method=hiyapyco.METHOD_MERGE)
 
         self.limited_mode = config['limited_mode']
-        self.slack_url = config['slack_url']
 
         # Load sensitives data from AWS Secret Manager
         try:
