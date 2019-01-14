@@ -115,3 +115,6 @@ dmypy.json
 
 # Local config with tokens!
 local_config.yml
+
+# Local csv files
+batchs/csv/*.csv
