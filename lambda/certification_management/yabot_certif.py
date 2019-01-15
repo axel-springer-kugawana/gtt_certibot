@@ -1,6 +1,7 @@
-import requests
 import json
 import logging
+import re
+import requests
 import urllib
 from certification_management.business import Certification
 from certification_management.business import User
@@ -23,19 +24,16 @@ class YabotCertif:
 
     def launch(self):
         # Application configuration
-        config = Configuration(self.logger, self.environment)
+        self.config = Configuration(self.logger, self.environment)
 
         # Check event
-        if self.token in config.allowed_input_tokens \
-        and not(config.limited_mode and not self.user_id in config.admin_users):
+        if self.token in self.config.allowed_input_tokens \
+        and not(self.config.limited_mode and not self.user_id in self.config.admin_users):
             if self.command == '/getvoucher':
                 return_text = self.getVoucher()
 
-            elif self.command == '/remindvoucher':
-                return_text = self.remindVoucher()
-
-            elif self.command == '/adduser':
-                return_text = "Ok, user added! (placeholder)"
+            elif self.command == '/getuservoucher':
+                return_text = self.getUserVoucher()
 
             else:
                 return_text = "Unknown command (" + self.command + ")"
@@ -71,16 +69,34 @@ class YabotCertif:
         else:
             return "Hi! Unfortunately we couldn't find your personal voucher code in our data base. Please get back to @Saskia KÖTTING."
 
-    def remindVoucher(self):
-        user = User.get(self.parameter)
+    def getUserVoucher(self):
+        # Limited to admin users
+        if not self.user_id in self.config.admin_users:
+            return "Sorry this command is limited to administrators."
+
+        # Check parameters
+        if not self.parameter:
+            return "Usage: /getuservoucher @user"
+
+        # Get UDID from parameter (format: <@ABCD|username>)
+        user_udid = ''
+        user_name = ''
+        try:
+            user_udid = re.search('@(.+?)\|', self.parameter).group(1)
+            user_name = re.search('\|(.+?)>', self.parameter).group(1)
+        except AttributeError:
+            user_udid = 'error'
+            user_name = 'error'
+
+        user = User.get(user_udid)
         if user:
             if user.voucher_code:
                 voucher = Voucher.get(user.voucher_code)
                 certification = Certification.get(voucher.certification_level)
-                return "Hi! Your personal voucher code for " + certification.name + \
+                return "Hi! The personal voucher code for " + user_name + " for " + certification.name + \
                     " is: " + voucher.code + \
-                    ". Please note that your voucher code is valid until " + voucher.availability + "."
+                    ". Please note that this voucher code is valid until " + voucher.availability + "."
             else:
-                return "You did not request your personnal voucher code yet. Please use /sendvoucher command."
+                return user_name + " did not request his/her personnal voucher code yet."
         else:
-            return "Hi! Unfortunately we couldn't find your personal voucher code in our data base. Please get back to @Saskia KÖTTING."
+            return "Hi! Unfortunately we couldn't find the user " + user_name + " in our data base."
