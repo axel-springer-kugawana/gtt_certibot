@@ -1,13 +1,12 @@
-from slacker import Slacker
-from utils.configuration import getSlackToken
 import boto3
-import time
 import os
-
+import time
+from slacker import Slacker
+from utils.configuration import Configuration
 
 def getUDIDforEmails():
 
-    slack_token = getSlackToken()
+    slack_token = Configuration().slack_token
     print('--- INFO: Connect to Slack')
     slack = Slacker(slack_token)
 
@@ -35,7 +34,7 @@ def transformEmailsIntoUsers(csv_filename):
     print('- Step 2: Create new file' + csv_filename + '.csv in "csv/to_import/"')
     transformed_csv = open('csv/to_import/' + csv_filename + '.csv',"w+")
     transformed_csv.write('user_id,certification_level' + '\n')
-    
+
     print('- Step 3: Open file user_email.csv to transform')
     csv_to_transform = open('csv/to_transform/user_email.csv', 'r')
     csv_to_transform.readline().strip().split(',')
@@ -54,7 +53,7 @@ def transformEmailsIntoUsers(csv_filename):
                                     str(round(end_time - start_time, 3)) + ")"
     print('- END OF JOB: You now have a new file in "csv/to_import" that can safely be imported. Enjoy !', \
             transform_time_information, '\n')
-    csv_to_transform.close() 
+    csv_to_transform.close()
     transformed_csv.close()
 
 if __name__ == "__main__":

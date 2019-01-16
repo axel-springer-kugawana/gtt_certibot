@@ -1,23 +1,29 @@
-from utils.secret_managment import get_secret
 import os
 import hiyapyco
+from utils.secret_managment import get_secret
 
-def getSlackToken():
 
-    # Load configuration
-    pkg_base = os.path.dirname(__file__)
-    config_file = '{}/../config/config.yml'.format(pkg_base)
-    config = hiyapyco.load(config_file, method=hiyapyco.METHOD_MERGE)
+class Configuration:
+    def __init__(self):
 
-    # Load API token from AWS Secret Manager
-    try:
-        print("--- INFO: Load AWS secrets")
-        api_tokens = get_secret()
-        slack_token = api_tokens['slack_token']
-        print("--- INFO: AWS secrets loaded with success")
-    except:
-        print("--- INFO: AWS secret failed, fallback with config file")
-        slack_token = config['slack_token']
-        print("--- INFO: Configuration file loaded with success")
+        # Load configuration
+        pkg_base = os.path.dirname(__file__)
+        config_file = ['{}/../config/config.yml'.format(pkg_base)]
+        local_config_file = '{}/../config/local_config.yml'.format(pkg_base)
+        if os.path.exists(local_config_file):
+            config_file.append(local_config_file)
+        config = hiyapyco.load(config_file, method=hiyapyco.METHOD_MERGE)
 
-    return slack_token
+        aws_secret_name = config['aws_secret_name']
+        aws_secret_region = config['aws_secret_region']
+
+        # Load API token from AWS Secret Manager
+        try:
+            print("--- INFO: Load AWS secrets")
+            secret = get_secret(aws_secret_name, aws_secret_region)
+            self.slack_token = secret['slack_bot_token']
+            print("--- INFO: AWS secrets loaded with success")
+        except:
+            print("--- INFO: AWS secret failed, fallback with config file")
+            self.slack_token = config['slack_bot_token']
+            print("--- INFO: Configuration file loaded with success")

@@ -2,10 +2,10 @@
 
 [![CircleCI](https://circleci.com/gh/axel-springer-kugawana/gtt_yabot.svg?style=svg&circle-token=9e33ae8a63586be2db59bf4aaeea2744b5ff385f)](https://circleci.com/gh/axel-springer-kugawana/gtt_yabot)
 
-Yabot is a Slack bot allowing you to manage voucher code delivery.
-It also includes a import script to initiate the database.
+Certibot is a Slack bot allowing you to manage voucher code delivery.
+It also includes an import script to initiate the database.
 
-Trusted by our teams in Axel Springer, Yabot sends voucher codes to your teammates with zero friction.
+Trusted by our teams in Axel Springer, Certibot sends voucher codes to your teammates with zero friction.
 You can import your vouchers and users details into its database with dedicated scripts.
 Users will then have access to their personnal voucher codes at their fingertips.
 
@@ -29,7 +29,7 @@ Default output format [None]: json
 
 All python modules required are listed in [requirements.txt] file.
 
-## Yabot - the slack bot
+## Certibot - the slack bot
 
 The bot works with slash commands:
 
@@ -43,15 +43,14 @@ To store sensitive data, we use AWS Secret manager. You will need to create a se
 
 ```json
 {
-  "bot_token": <BOT_TOKEN>,
-  "allowed_input_tokens": [
-    <LIST_OF_TOKEN_SEND_BY_SLACK_ON_BOT_EVENTS>
-  ],
+  "slack_event_token": <TOKEN_SEND_BY_SLACK_ON_BOT_EVENTS>,
   "admin_users": [
-    <LIST_OF_ADMIN_SLACK_IDS>
+    <LIST_OF_ADMIN_SLACK_UDIDS>
   ]
 }
 ```
+
+Then specify in the [config.yml] file the secret name et the region you use.
 
 #### Limited mode
 
@@ -60,7 +59,7 @@ Once `limited_mode` has been enabled, only admins will be allowed to use slash c
 
 ## Import module
 
-Because you may have hundreds or thousands of users and personal voucher codes, we thought it might be helpful to enable developers to easily import csv files into the dynamoDB database that's behind all the magic of Yabot.
+Because you may have hundreds or thousands of users and personal voucher codes, we thought it might be helpful to enable developers to easily import csv files into the dynamoDB database that's behind all the magic of Certibot.
 Simply upload your csv files into 'csv/to_transform/' and run python `python import_csv.py` in your favorite IDE.
 
 You've got emails for your users and have no idea how to get their Slack UDID ? We've thought about it too and created a batch that transforms emails into UDIDs.

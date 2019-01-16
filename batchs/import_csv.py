@@ -1,11 +1,10 @@
-from os import walk
-import os
 import boto3
+import os
 import time
-
+from os import walk
 
 def importCSVtoDynamoDB(table_name):
-   
+
     print('- Step 1: Connecting to DynamoDB...')
     dynamodb_conn = boto3.resource('dynamodb')
     print('- Step 2: Accessing table ' + table_name)
@@ -22,13 +21,13 @@ def importCSVtoDynamoDB(table_name):
         row = {}
         for colunm_number, colunm_name in enumerate(header):
             row[colunm_name] = str(line[colunm_number])
-        
+
         print('--- INFO: Importing row: ', row)
         dynamodb_table.put_item(Item=row)
 
     print('- Step 5: Closing csv file...')
-    csv_file.close() 
-   
+    csv_file.close()
+
 
 def importFiles():
 

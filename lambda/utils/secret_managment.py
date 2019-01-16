@@ -8,10 +8,10 @@ import base64
 from botocore.exceptions import ClientError
 
 
-def get_secret():
+def get_secret(aws_secret_name, aws_secret_region):
 
-    secret_name = "prod/gtt/yabot"
-    region_name = "eu-west-1"
+    secret_name = aws_secret_name
+    region_name = aws_secret_region
 
     # Create a Secrets Manager client
     session = boto3.session.Session()

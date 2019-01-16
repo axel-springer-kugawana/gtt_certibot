@@ -1,5 +1,5 @@
 import os
-from certification_management.yabot_certif import YabotCertif
+from certification_management.certibot import Certibot
 
 def handler(event, context):
     """This method is the start point for AWS lambda."""
@@ -17,5 +17,5 @@ def handler(event, context):
         text = ""   # Slash command has no text and is pretty straight forward
     response_url = event['response_url']
 
-    yabot_certif = YabotCertif(environment, token, user_id, command, text, response_url)
-    return yabot_certif.launch()
+    certibot = Certibot(environment, token, user_id, command, text, response_url)
+    certibot.launch()
