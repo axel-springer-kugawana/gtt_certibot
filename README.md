@@ -1,6 +1,6 @@
 # gtt_yabot
 
-[![CircleCI](https://circleci.com/gh/axel-springer-kugawana/gtt_yabot.svg?style=svg&circle-token=9e33ae8a63586be2db59bf4aaeea2744b5ff385f)](https://circleci.com/gh/axel-springer-kugawana/gtt_yabot)
+[![CircleCI](https://circleci.com/gh/axel-springer-kugawana/gtt_certibot.svg?style=svg&circle-token=9e33ae8a63586be2db59bf4aaeea2744b5ff385f)](https://circleci.com/gh/axel-springer-kugawana/gtt_certibot)
 
 Certibot is a Slack bot allowing you to manage voucher code delivery.
 It also includes an import script to initiate the database.
