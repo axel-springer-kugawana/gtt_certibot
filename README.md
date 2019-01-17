@@ -1,4 +1,4 @@
-# gtt_yabot
+# gtt_certibot
 
 [![CircleCI](https://circleci.com/gh/axel-springer-kugawana/gtt_certibot.svg?style=svg&circle-token=9e33ae8a63586be2db59bf4aaeea2744b5ff385f)](https://circleci.com/gh/axel-springer-kugawana/gtt_certibot)
 
