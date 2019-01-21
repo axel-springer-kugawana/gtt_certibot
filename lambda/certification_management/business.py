@@ -1,3 +1,4 @@
+import time
 import boto3
 from boto3.dynamodb.conditions import Key, Attr
 
@@ -33,10 +34,11 @@ class Certification:
 class User:
     users = boto3.resource('dynamodb').Table('awscert_user')
 
-    def __init__(self, user_id, certification_level, voucher_code=None):
+    def __init__(self, user_id, certification_level, voucher_code=None, attribuated_date=None):
         self.user_id = user_id
         self.certification_level = certification_level
         self.voucher_code = voucher_code
+        self.attribuated_date = attribuated_date
 
     def __str__(self):
         str_format = "user_id: " + self.user_id + \
@@ -60,9 +62,12 @@ class User:
     def attribuateVoucher(self, voucher):
         if not self.voucher_code and self.certification_level == voucher.certification_level:
             self.voucher_code = voucher.code
-            User.users.update_item(Key={'user_id': self.user_id},
-                                   UpdateExpression='SET voucher_code = :voucher_code',
-                                   ExpressionAttributeValues={':voucher_code': self.voucher_code})
+            self.attribuated_date = time.strftime('%d/%m/%y',time.localtime())
+            User.users.update_item(Key={'user_id': self.user_id,
+                                        'attribuated_date': self.attribuated_date},
+                                   UpdateExpression='SET voucher_code = :voucher_code, attribuated_date = :attribuated_date',
+                                   ExpressionAttributeValues={':voucher_code': self.voucher_code,
+                                                                ':attribuated_date': self.attribuated_date}
             return True
         return False
 
