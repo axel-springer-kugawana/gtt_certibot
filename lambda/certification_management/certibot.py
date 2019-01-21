@@ -81,7 +81,8 @@ class Certibot:
                             "* has been requested by you: *" + voucher.code + \
                             "*. Please note that your voucher code is valid until *" + voucher.availability + "*."
                         }
-                except:
+                except Exception as e:
+                    self.logger.warn(e)
                     payload = {
                         "text": "Hi! Unfortunately there are no more codes for *" + certification.name + "* available. " + \
                         "Please contact <@UBRJ09SBE> for more information and the ordering of new voucher codes."

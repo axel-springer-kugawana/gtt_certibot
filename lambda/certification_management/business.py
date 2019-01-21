@@ -62,12 +62,11 @@ class User:
     def attribuateVoucher(self, voucher):
         if not self.voucher_code and self.certification_level == voucher.certification_level:
             self.voucher_code = voucher.code
-            self.attribuated_date = time.strftime('%d/%m/%y',time.localtime())
-            User.users.update_item(Key={'user_id': self.user_id,
-                                        'attribuated_date': self.attribuated_date},
+            self.attribuated_date = time.strftime('%d/%m/%Y',time.localtime())
+            User.users.update_item(Key={'user_id': self.user_id},
                                    UpdateExpression='SET voucher_code = :voucher_code, attribuated_date = :attribuated_date',
                                    ExpressionAttributeValues={':voucher_code': self.voucher_code,
-                                                                ':attribuated_date': self.attribuated_date}
+                                                                ':attribuated_date': self.attribuated_date})
             return True
         return False
 
