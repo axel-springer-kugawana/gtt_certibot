@@ -68,7 +68,7 @@ class Certibot:
                 certification = Certification.get(voucher.certification_level)
                 payload = {
                     "text": "Hi! Your personal voucher code for *" + certification.name + \
-                    "* has been already requested by you: *" + voucher.code + \
+                    "* level has been already requested by you: *" + voucher.code + \
                     "*. Please note that your voucher code is valid until *" + voucher.availability + "*."
                 }
             else:
@@ -78,13 +78,13 @@ class Certibot:
                     if user.attribuateVoucher(voucher):
                         payload = {
                             "text": "Hi! Your personal voucher code for *" + certification.name + \
-                            "* has been requested by you: *" + voucher.code + \
+                            "* level has been requested by you: *" + voucher.code + \
                             "*. Please note that your voucher code is valid until *" + voucher.availability + "*."
                         }
                 except Exception as e:
                     self.logger.warn(e)
                     payload = {
-                        "text": "Hi! Unfortunately there are no more codes for *" + certification.name + "* available. " + \
+                        "text": "Hi! Unfortunately there are no more codes for *" + certification.name + "* level available. " + \
                         "Please contact <@UBRJ09SBE> for more information and the ordering of new voucher codes."
                     }
         else:
@@ -128,7 +128,7 @@ class Certibot:
 
                     payload = {
                         "text": "Hi! The personal voucher code for *" + user_name + "* for *" + certification.name + \
-                        "* is: *" + voucher.code + \
+                        "* level is: *" + voucher.code + \
                         "*. Please note that this voucher code is valid until *" + voucher.availability + "*."
                     }
                 else:
