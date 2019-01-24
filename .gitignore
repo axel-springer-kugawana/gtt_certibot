@@ -118,3 +118,6 @@ local_config.yml
 
 # Local csv files
 batchs/csv/*.csv
+
+# tests reports folder
+test-reports

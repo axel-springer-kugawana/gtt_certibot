@@ -1,0 +1,7 @@
+[report]
+show_missing = True
+omit =
+    **/__init__.py
+    **/tests/**/*.py
+    **/configuration.py
+    **/secret_managment.py

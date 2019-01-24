@@ -79,4 +79,4 @@ See also the list of [contributors] who participated in this project.
 [requirements.txt]: requirements.txt
 [config.yml]: lambda/config/config.yml
 [sensitive datas]: #sensitivedatas
-[contributors]: https://github.com/axel-springer-kugawana/gtt_yabot/contributors
+[contributors]: https://github.com/axel-springer-kugawana/gtt_certibot/contributors

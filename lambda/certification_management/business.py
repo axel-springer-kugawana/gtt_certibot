@@ -19,8 +19,8 @@ class Certification:
 
     def remove(self):
         if len(Voucher.vouchers.scan(FilterExpression=Attr('certification_level').eq(self.level))['Items']) == 0 \
-                and len(User.users.scan(FilterExpression=Attr('certification_level').eq(self.level))['Items']) == 0:
-            Certification.certifications.remove(self)
+           and len(User.users.scan(FilterExpression=Attr('certification_level').eq(self.level))['Items']) == 0:
+            Certification.certifications.delete_item(Key={'name': self.name})
             return True
         return False
 
@@ -74,10 +74,14 @@ class User:
     def get(cls, user_id):
         dbusers = User.users.query(KeyConditionExpression=Key('user_id').eq(user_id))['Items']
         if len(dbusers) > 0:
-            try:
-                return User(dbusers[0]['user_id'], dbusers[0]['certification_level'], dbusers[0]['voucher_code'])
-            except KeyError:
-                return User(dbusers[0]['user_id'], dbusers[0]['certification_level'])
+            voucher_code = None
+            attribuated_date = None
+            if 'voucher_code' in dbusers[0]:
+                voucher_code = dbusers[0]['voucher_code']
+            if 'attribuated_date' in dbusers[0]:
+                attribuated_date = dbusers[0]['attribuated_date']
+
+            return User(dbusers[0]['user_id'], dbusers[0]['certification_level'], voucher_code, attribuated_date)
 
 
 class Voucher:
@@ -98,7 +102,7 @@ class Voucher:
         return str_format
 
     def add(self):
-        Voucher.vouchers.put_item(Item={'code': self.code, 'certification_level': self.certification_level})
+        Voucher.vouchers.put_item(Item={'code': self.code, 'certification_level': self.certification_level, 'availability': self.availability})
         return True
 
     def remove(self):
