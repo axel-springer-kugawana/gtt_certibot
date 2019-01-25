@@ -79,6 +79,9 @@ class test_certification(unittest.TestCase):
         self.voucher_table = self.dynamodb.Table('awscert_voucher')
 
     def tearDown(self):
+        self.certification_table.delete()
+        self.user_table.delete()
+        self.voucher_table.delete()
         self.mock_dynamodb.stop()
 
     def test_certification_get(self):
@@ -250,10 +253,34 @@ class test_user(unittest.TestCase):
                     'WriteCapacityUnits': 5
                 }
         )
+        self.dynamodb.create_table(
+            TableName='awscert_certification',
+                KeySchema=[
+                    {
+                        'AttributeName': 'name',
+                        'KeyType': 'HASH'
+                    },
+                ],
+                AttributeDefinitions=[
+                    {
+                        'AttributeName': 'name',
+                        'AttributeType': 'S'
+                    },
+
+                ],
+                ProvisionedThroughput={
+                    'ReadCapacityUnits': 5,
+                    'WriteCapacityUnits': 5
+                }
+        )
         self.user_table = self.dynamodb.Table('awscert_user')
         self.voucher_table = self.dynamodb.Table('awscert_voucher')
+        self.certification_table = self.dynamodb.Table('awscert_certification')
 
     def tearDown(self):
+        self.certification_table.delete()
+        self.user_table.delete()
+        self.voucher_table.delete()
         self.mock_dynamodb.stop()
 
     def test_user_get_without_voucher(self):
@@ -288,6 +315,26 @@ class test_user(unittest.TestCase):
         assert user.certification_level == certification_level
         assert user.voucher_code == voucher_code
         assert user.attribuated_date == attribuated_date
+
+    def test_user_get_with_voucher_and_certification_passed(self):
+        user_id = 'test_user_get_id'
+        certification_level = 'test_user_get_level'
+        voucher_code = 'test_user_get_voucher_code'
+        attribuated_date = 'test_user_get_attribuated_date'
+        profil_update_date = 'test_user_get_profil_update_date'
+
+        #given
+        self.user_table.put_item(Item={'user_id': user_id, 'certification_level': certification_level, 'voucher_code': voucher_code, 'attribuated_date': attribuated_date, 'profil_update_date': profil_update_date})
+
+        #when
+        user = User.get(user_id)
+
+        #then
+        assert user.user_id == user_id
+        assert user.certification_level == certification_level
+        assert user.voucher_code == voucher_code
+        assert user.attribuated_date == attribuated_date
+        assert user.profil_update_date == profil_update_date
 
     def test_user_get_nonexistent(self):
         user_id = 'test_user_get_id'
@@ -410,6 +457,78 @@ class test_user(unittest.TestCase):
         assert response == False
         assert user.voucher_code == None
 
+    def test_user_passesCertification(self):
+        user_id = 'test_user_passes_id'
+        certification_name = 'test_user_passes_certification_name'
+        certification_level = 'test_user_passes_certification_level'
+        voucher_code = 'test_user_passes_voucher_code'
+
+        #given
+        self.user_table.put_item(Item={'user_id': user_id, 'certification_level': certification_level, 'voucher_code': voucher_code})
+        self.certification_table.put_item(Item={'name': certification_name, 'certification_level': certification_level})
+        user = User(user_id, certification_level, voucher_code)
+        certification = Certification(certification_name, certification_level)
+
+        #when
+        response = user.passesCertification(certification)
+
+        #then
+        assert response == True
+        assert user.profil_update_date == time.strftime('%d/%m/%Y',time.localtime())
+
+    def test_user_passesCertification_already_saved(self):
+        user_id = 'test_user_passes_id'
+        certification_name = 'test_user_passes_certification_name'
+        certification_level = 'test_user_passes_certification_level'
+        voucher_code = 'test_user_passes_voucher_code'
+        attribuated_date = 'test_user_passes_attribuated_date'
+        profil_update_date = 'test_user_passes_profil_update_date'
+
+        #given
+        user = User(user_id, certification_level, voucher_code, attribuated_date, profil_update_date)
+        certification = Certification(certification_name, certification_level)
+
+        #when
+        response = user.passesCertification(certification)
+
+        #then
+        assert response == False
+        assert user.profil_update_date == profil_update_date
+
+    def test_user_passesCertification_wrong_level(self):
+        user_id = 'test_user_passes_id'
+        user_level = 'test_user_passes_level'
+        certification_name = 'test_user_passes_certification_name'
+        certification_level = 'test_user_passes_certification_level'
+        voucher_code = 'test_user_passes_voucher_code'
+
+        #given
+        user = User(user_id, user_level, voucher_code)
+        certification = Certification(certification_name, certification_level)
+
+        #when
+        response = user.passesCertification(certification)
+
+        #then
+        assert response == False
+        assert user.profil_update_date == None
+
+    def test_user_passesCertification_without_voucher(self):
+        user_id = 'test_user_passes_id'
+        certification_name = 'test_user_passes_certification_name'
+        certification_level = 'test_user_passes_certification_level'
+
+        #given
+        user = User(user_id, certification_level)
+        certification = Certification(certification_name, certification_level)
+
+        #when
+        response = user.passesCertification(certification)
+
+        #then
+        assert response == False
+        assert user.profil_update_date == None
+
     def test_user_str_without_voucher(self):
         user_id = 'test_user_str_id'
         certification_level = 'test_user_str_level'
@@ -488,6 +607,8 @@ class test_voucher(unittest.TestCase):
         self.voucher_table = self.dynamodb.Table('awscert_voucher')
 
     def tearDown(self):
+        self.user_table.delete()
+        self.voucher_table.delete()
         self.mock_dynamodb.stop()
 
     def test_voucher_get(self):

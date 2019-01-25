@@ -9,7 +9,7 @@ from certification_management.business import Voucher
 from utils.configuration import Configuration
 
 
-class Certibot:
+class CertibotCommands:
     def __init__(self, environment, token, user_id, command, parameter, response_url):
         # Logging configuration
         logging.basicConfig()
