@@ -1,5 +1,6 @@
 hiyapyco
 requests
+slacker
 boto3 #provided
 os #provided
 re #provided

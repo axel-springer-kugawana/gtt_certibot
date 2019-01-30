@@ -25,16 +25,29 @@ class Certification:
         return False
 
     @classmethod
+    def __map(cls, dbitem):
+        if dbitem:
+            return Certification(dbitem['name'], dbitem['level'])
+
+    @classmethod
     def get(cls, level):
         dbcertifications = Certification.certifications.scan(FilterExpression=Attr('level').eq(level))['Items']
         if len(dbcertifications) > 0:
-            return Certification(dbcertifications[0]['name'], dbcertifications[0]['level'])
+            return Certification.__map(dbcertifications[0])
+
+    @classmethod
+    def getAll(cls):
+        certifications = list()
+        for certification in Certification.certifications.scan()['Items']:
+            certifications.append(Certification.__map(certification))
+        certifications.sort(key=lambda certification: certification.level)
+        return certifications
 
     @classmethod
     def getByName(cls, name):
         dbcertifications = Certification.certifications.query(KeyConditionExpression=Key('name').eq(name))['Items']
         if len(dbcertifications) > 0:
-            return Certification(dbcertifications[0]['name'], dbcertifications[0]['level'])
+            return Certification.__map(dbcertifications[0])
 
 
 class User:
@@ -91,20 +104,32 @@ class User:
         return False
 
     @classmethod
-    def get(cls, user_id):
-        dbusers = User.users.query(KeyConditionExpression=Key('user_id').eq(user_id))['Items']
-        if len(dbusers) > 0:
+    def __map(cls, dbitem):
+        if dbitem:
             voucher_code = None
             attribuated_date = None
             profil_update_date = None
-            if 'voucher_code' in dbusers[0]:
-                voucher_code = dbusers[0]['voucher_code']
-            if 'attribuated_date' in dbusers[0]:
-                attribuated_date = dbusers[0]['attribuated_date']
-            if 'profil_update_date' in dbusers[0]:
-                profil_update_date = dbusers[0]['profil_update_date']
+            if 'voucher_code' in dbitem:
+                voucher_code = dbitem['voucher_code']
+            if 'attribuated_date' in dbitem:
+                attribuated_date = dbitem['attribuated_date']
+            if 'profil_update_date' in dbitem:
+                profil_update_date = dbitem['profil_update_date']
 
-            return User(dbusers[0]['user_id'], dbusers[0]['certification_level'], voucher_code, attribuated_date, profil_update_date)
+            return User(dbitem['user_id'], dbitem['certification_level'], voucher_code, attribuated_date, profil_update_date)
+
+    @classmethod
+    def get(cls, user_id):
+        dbusers = User.users.query(KeyConditionExpression=Key('user_id').eq(user_id))['Items']
+        if len(dbusers) > 0:
+            return User.__map(dbusers[0])
+
+    @classmethod
+    def getAll(cls):
+        users = list()
+        for user in User.users.scan()['Items']:
+            users.append(User.__map(user))
+        return users
 
 
 class Voucher:
@@ -138,10 +163,22 @@ class Voucher:
         return len(User.users.scan(FilterExpression=Attr('voucher_code').eq(self.code))['Items']) == 0
 
     @classmethod
+    def __map(cls, dbitem):
+        if dbitem:
+            return Voucher(dbitem['code'], dbitem['certification_level'], dbitem['availability'])
+
+    @classmethod
     def get(cls, code):
         dbvouchers = Voucher.vouchers.query(KeyConditionExpression=Key('code').eq(code))['Items']
         if len(dbvouchers) > 0:
-            return Voucher(dbvouchers[0]['code'], dbvouchers[0]['certification_level'], dbvouchers[0]['availability'])
+            return Voucher.__map(dbvouchers[0])
+
+    @classmethod
+    def getAll(cls):
+        vouchers = list()
+        for voucher in Voucher.vouchers.scan()['Items']:
+            vouchers.append(Voucher.__map(voucher))
+        return vouchers
 
     @classmethod
     def getAvailable(cls, certification_level):

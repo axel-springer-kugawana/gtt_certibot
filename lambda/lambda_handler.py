@@ -1,6 +1,7 @@
 import os
 from certification_management.certibot_commands import CertibotCommands
 from certification_management.certibot_events import CertibotEvents
+from certification_management.certibot_report import CertibotReport
 
 def handler(event, context):
     """This method is the start point for slash commands."""
@@ -26,4 +27,9 @@ def handler(event, context):
         response_url = event['response_url']
 
         certibot = CertibotCommands(environment, token, user_id, command, text, response_url)
+        certibot.launch()
+
+    elif 'report' in event:
+        # This is a Cloudwatch triggered call
+        certibot = CertibotReport(environment)
         certibot.launch()

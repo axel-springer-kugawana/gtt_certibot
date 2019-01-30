@@ -1,0 +1,2 @@
+slack_channel: test_slack
+post_to_slack: True

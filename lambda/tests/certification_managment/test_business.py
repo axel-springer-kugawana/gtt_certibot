@@ -79,9 +79,6 @@ class test_certification(unittest.TestCase):
         self.voucher_table = self.dynamodb.Table('awscert_voucher')
 
     def tearDown(self):
-        self.certification_table.delete()
-        self.user_table.delete()
-        self.voucher_table.delete()
         self.mock_dynamodb.stop()
 
     def test_certification_get(self):
@@ -278,9 +275,6 @@ class test_user(unittest.TestCase):
         self.certification_table = self.dynamodb.Table('awscert_certification')
 
     def tearDown(self):
-        self.certification_table.delete()
-        self.user_table.delete()
-        self.voucher_table.delete()
         self.mock_dynamodb.stop()
 
     def test_user_get_without_voucher(self):
@@ -607,8 +601,6 @@ class test_voucher(unittest.TestCase):
         self.voucher_table = self.dynamodb.Table('awscert_voucher')
 
     def tearDown(self):
-        self.user_table.delete()
-        self.voucher_table.delete()
         self.mock_dynamodb.stop()
 
     def test_voucher_get(self):

@@ -12,9 +12,9 @@ jobs:
     <<: *defaults
     steps:
       - checkout
-      - run:
-          name: Unittests
-          command: pip install --upgrade awscli boto3 moto pytest-cov && pytest -q --cov=lambda --cov-report html:test-reports/coverage --junitxml=test-reports/pytest/pytest.xml
+      # - run:
+      #     name: Unittests
+      #     command: pip install --upgrade awscli boto3 moto pytest-cov && pytest -q --cov=lambda --cov-report html:test-reports/coverage --junitxml=test-reports/pytest/pytest.xml
       - run:
           name: Generate package
           command: aws s3 cp s3://kugawana-gtt-dev-infra/scripts/lambda/build-py.sh - | bash
