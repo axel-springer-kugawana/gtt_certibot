@@ -72,7 +72,7 @@ class CertibotCommands:
                 payload = {
                     "text": "Hi! Your personal voucher code for *" + certification.name + \
                     "* level has been already requested by you: *" + voucher.code + \
-                    "*. Please note that your voucher code is valid until *" + voucher.availability + "*."
+                    "*. Please note that your voucher code is valid until *" + voucher.availability.strftime('%m/%d/%Y') + "*."
                 }
             else:
                 try:
@@ -82,7 +82,7 @@ class CertibotCommands:
                         payload = {
                             "text": "Hi! Your personal voucher code for *" + certification.name + \
                             "* level has been requested by you: *" + voucher.code + \
-                            "*. Please note that your voucher code is valid until *" + voucher.availability + "*."
+                            "*. Please note that your voucher code is valid until *" + voucher.availability.strftime('%m/%d/%Y') + "*."
                         }
                 except Exception as e:
                     self.logger.warn(e)
@@ -132,7 +132,7 @@ class CertibotCommands:
                     payload = {
                         "text": "Hi! The personal voucher code for *" + user_name + "* for *" + certification.name + \
                         "* level is: *" + voucher.code + \
-                        "*. Please note that this voucher code is valid until *" + voucher.availability + "*."
+                        "*. Please note that this voucher code is valid until *" + voucher.availability.strftime('%m/%d/%Y') + "*."
                     }
                 else:
                     payload = {
