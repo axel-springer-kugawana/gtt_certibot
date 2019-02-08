@@ -1,2 +1,3 @@
 slack_channel: test_slack
-post_to_slack: True
+admin_slack_channel: test_slack
+post_to_slack: False

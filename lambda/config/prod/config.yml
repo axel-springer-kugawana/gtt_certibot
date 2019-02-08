@@ -1,2 +1,3 @@
-slack_channel: test_github_tools
+slack_channel: all_guild_aws
+admin_slack_channel: gtt_certificate_admin
 post_to_slack: True

@@ -1,20 +1,22 @@
-import time
 import boto3
+import datetime
+import time
 from boto3.dynamodb.conditions import Key, Attr
 
 
 class Certification:
     certifications = boto3.resource('dynamodb').Table('awscert_certification')
 
-    def __init__(self, name, level):
+    def __init__(self, name, level, stars):
         self.name = name
         self.level = level
+        self.stars = stars
 
     def __str__(self):
-        return "Name: " + self.name + ", level: " + self.level
+        return "Name: " + self.name + ", level: " + self.level + ", stars: " + self.stars
 
     def add(self):
-        Certification.certifications.put_item(Item={'name': self.name, 'level': self.level})
+        Certification.certifications.put_item(Item={'name': self.name, 'level': self.level, 'stars': self.stars})
         return True
 
     def remove(self):
@@ -27,7 +29,7 @@ class Certification:
     @classmethod
     def __map(cls, dbitem):
         if dbitem:
-            return Certification(dbitem['name'], dbitem['level'])
+            return Certification(dbitem['name'], dbitem['level'], dbitem['stars'])
 
     @classmethod
     def get(cls, level):
@@ -57,8 +59,12 @@ class User:
         self.user_id = user_id
         self.certification_level = certification_level
         self.voucher_code = voucher_code
-        self.attribuated_date = attribuated_date
-        self.profil_update_date = profil_update_date
+        self.attribuated_date = None
+        if attribuated_date:
+            self.attribuated_date = datetime.datetime.strptime(attribuated_date, "%d/%m/%Y").date()
+        self.profil_update_date = None
+        if profil_update_date:
+            self.profil_update_date = datetime.datetime.strptime(profil_update_date, "%d/%m/%Y").date()
 
     def __str__(self):
         str_format = "user_id: " + self.user_id + \
@@ -68,7 +74,7 @@ class User:
         else:
             str_format += ", no voucher code"
         if self.profil_update_date:
-            str_format += ", profil_update_date: " + self.profil_update_date
+            str_format += ", profil_update_date: " + self.profil_update_date.strftime('%m/%d/%Y')
         else:
             str_format += ", certification not yet passed"
         return str_format
@@ -86,11 +92,11 @@ class User:
     def attribuateVoucher(self, voucher):
         if not self.voucher_code and self.certification_level == voucher.certification_level:
             self.voucher_code = voucher.code
-            self.attribuated_date = time.strftime('%d/%m/%Y',time.localtime())
+            self.attribuated_date = time.localtime()
             User.users.update_item(Key={'user_id': self.user_id},
                                    UpdateExpression='SET voucher_code = :voucher_code, attribuated_date = :attribuated_date',
                                    ExpressionAttributeValues={':voucher_code': self.voucher_code,
-                                                                ':attribuated_date': self.attribuated_date})
+                                                                ':attribuated_date': self.attribuated_date.strftime('%m/%d/%Y')})
             return True
         return False
 
@@ -99,7 +105,7 @@ class User:
             self.profil_update_date = time.strftime('%d/%m/%Y',time.localtime())
             User.users.update_item(Key={'user_id': self.user_id},
                                    UpdateExpression='SET profil_update_date = :profil_update_date',
-                                   ExpressionAttributeValues={':profil_update_date': self.profil_update_date})
+                                   ExpressionAttributeValues={':profil_update_date': self.profil_update_date.strftime('%m/%d/%Y')})
             return True
         return False
 
@@ -138,19 +144,19 @@ class Voucher:
     def __init__(self, code, certification_level, availability):
         self.code = code
         self.certification_level = certification_level
-        self.availability = availability
+        self.availability = datetime.datetime.strptime(availability, "%d/%m/%Y").date()
 
     def __str__(self):
         str_format = "Code: " + self.code + ", level: " + self.certification_level
         if self.isAvailable():
-            str_format += ", available until " + self.availability
+            str_format += ", available until " + self.availability.strftime('%m/%d/%Y')
         else:
             str_format += "already claimed by " + \
             User.users.scan(FilterExpression=Attr('voucher_code').eq(self.code))['Items'][0]['user_id']
         return str_format
 
     def add(self):
-        Voucher.vouchers.put_item(Item={'code': self.code, 'certification_level': self.certification_level, 'availability': self.availability})
+        Voucher.vouchers.put_item(Item={'code': self.code, 'certification_level': self.certification_level, 'availability': self.availability.strftime('%m/%d/%Y')})
         return True
 
     def remove(self):
@@ -188,3 +194,28 @@ class Voucher:
             if voucher.isAvailable():
                 return voucher
         return None
+
+
+class Milestone:
+    milestones = boto3.resource('dynamodb').Table('awscert_milestone')
+
+    def __init__(self, id, date, goal: int):
+        self.id = id
+        self.date = datetime.datetime.strptime(date, "%d/%m/%Y").date()
+        self.goal = goal
+
+    def __str__(self):
+        return "Id: " + self.id + ", date: " + self.date.strftime('%m/%d/%Y') + ", goal: " + self.goal + " stars"
+
+    @classmethod
+    def __map(cls, dbitem):
+        if dbitem:
+            return Milestone(dbitem['id'], dbitem['date'], dbitem['goal'])
+
+    @classmethod
+    def getAll(cls):
+        milestones = list()
+        for milestone in Milestone.milestones.scan()['Items']:
+            milestones.append(Milestone.__map(milestone))
+        milestones.sort(key=lambda milestone: milestone.id)
+        return milestones
