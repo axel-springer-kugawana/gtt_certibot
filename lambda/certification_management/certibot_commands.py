@@ -38,9 +38,12 @@ class CertibotCommands:
             elif self.command == '/getuservoucher':
                 slash_response = self.getUserVoucher()
 
+            elif self.command == '/sendgift':
+                slash_response = self.sendGift()
+
             else:
                 slash_response = {
-                    "text": "Unknown command (_" + self.command + "_)"
+                    "text": "Unknown command (*" + self.command + "*)"
                 }
         else:
             slash_response = {
@@ -56,7 +59,7 @@ class CertibotCommands:
         headers = {
             "content-type": "application/json",
         }
-        response = requests.request("POST", self.response_url, data=slash_response, headers=headers)
+        response = requests.request("POST", self.response_url, data=json.dumps(slash_response), headers=headers)
         self.logger.info(response)
 
     def getVoucher(self):
@@ -92,7 +95,7 @@ class CertibotCommands:
                 "text": "Hi! Unfortunately we couldn't find your personal voucher code in our data base. Please get back to <@UBRJ09SBE>."
             }
 
-        return json.dumps(payload)
+        return payload
 
     def getUserVoucher(self):
         payload = None
@@ -140,4 +143,48 @@ class CertibotCommands:
                     "text": "Hi! Unfortunately we couldn't find the user *" + user_name + "* in our data base."
                 }
 
-        return json.dumps(payload)
+        return payload
+
+    def sendGift(self):
+        payload = None
+
+        # Limited to admin users
+        if not self.user_id in self.config.admin_users:
+            payload = {
+                "text": "Sorry this command is limited to the bot administrators."
+            }
+
+        # Check parameters
+        elif not self.parameter:
+            payload = {
+                "text": "Usage: /sendgift @user"
+            }
+
+        else:
+            # Get UDID from parameter (format: <@ABCD|username>)
+            user_udid = ''
+            user_name = ''
+            try:
+                user_udid = re.search('@(.+?)\|', self.parameter).group(1)
+                user_name = re.search('\|(.+?)>', self.parameter).group(1)
+            except AttributeError:
+                user_udid = 'error'
+                user_name = 'error'
+
+            user = User.get(user_udid)
+            if user:
+                if user.profil_update_date:
+                    if user.sendGift():
+                        payload = {
+                            "text": "Hi! Thank you for sending a gift to *" + user_name + "*."
+                        }
+                else:
+                    payload = {
+                        "text": "*" + user_name + "* did not update his/her profil yet."
+                    }
+            else:
+                payload = {
+                    "text": "Hi! Unfortunately we couldn't find the user *" + user_name + "* in our data base."
+                }
+
+        return payload

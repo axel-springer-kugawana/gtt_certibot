@@ -29,6 +29,7 @@ class CertibotReport:
         users = User.getAll()
         users_with_voucher = [user for user in users if user.voucher_code]
         users_with_profil = [user for user in users if user.profil_update_date]
+        users_without_gift = [user for user in users if user.gift_sent_date]
 
         end_time = time.time()
 
@@ -74,7 +75,7 @@ class CertibotReport:
             admin_message = "*" + str(len(certifications)) + "* certification levels\n" \
                 + "*" + str(len(vouchers)) + "* voucher codes\n" \
                 + global_message
-            snippet = "\n".join([user.email for user in users_with_profil])
+            snippet = "\n".join([user.email for user in users_without_gift])
 
             if self.config.post_to_slack:
                 self.kugawana_tool.post_notification_to_kugawana_slack(slack_channel=self.config.admin_slack_channel,
@@ -84,7 +85,8 @@ class CertibotReport:
                                                                     level="good")
                 if len(snippet) > 0:
                     self.kugawana_tool.post_snippet_to_kugawana_slack(slack_channel=self.config.admin_slack_channel,
-                                                                    post_message=snippet)
+                                                                      post_title="List of users who did not receive their gift",
+                                                                      post_message=snippet)
             else:
                 print(admin_message)
                 print(snippet)

@@ -55,16 +55,20 @@ class Certification:
 class User:
     users = boto3.resource('dynamodb').Table('awscert_user')
 
-    def __init__(self, user_id, certification_level, voucher_code=None, attribuated_date=None, profil_update_date=None):
+    def __init__(self, user_id, certification_level, voucher_code=None, attribuated_date=None, profil_update_date=None, gift_sent_date=None):
         self.user_id = user_id
         self.certification_level = certification_level
         self.voucher_code = voucher_code
         self.attribuated_date = None
+        self.profil_update_date = None
+        self.gift_sent_date = None
         if attribuated_date:
             self.attribuated_date = datetime.datetime.strptime(attribuated_date, "%d/%m/%Y").date()
         self.profil_update_date = None
         if profil_update_date:
             self.profil_update_date = datetime.datetime.strptime(profil_update_date, "%d/%m/%Y").date()
+        if gift_sent_date:
+            self.gift_sent_date = datetime.datetime.strptime(gift_sent_date, "%d/%m/%Y").date()
 
     def __str__(self):
         str_format = "user_id: " + self.user_id + \
@@ -77,6 +81,10 @@ class User:
             str_format += ", profil_update_date: " + self.profil_update_date.strftime('%m/%d/%Y')
         else:
             str_format += ", certification not yet passed"
+        if self.gift_sent_date:
+            str_format += ", gift_sent_date: " + self.gift_sent_date.strftime('%m/%d/%Y')
+        else:
+            str_format += ", gift not yet sent"
         return str_format
 
     def add(self):
@@ -109,20 +117,32 @@ class User:
             return True
         return False
 
+    def sendGift(self):
+        if self.profil_update_date and not self.gift_sent_date:
+            self.gift_sent_date = time.strftime('%d/%m/%Y',time.localtime())
+            User.users.update_item(Key={'user_id': self.user_id},
+                                   UpdateExpression='SET gift_sent_date = :gift_sent_date',
+                                   ExpressionAttributeValues={':gift_sent_date': self.gift_sent_date.strftime('%m/%d/%Y')})
+            return True
+        return False
+
     @classmethod
     def __map(cls, dbitem):
         if dbitem:
             voucher_code = None
             attribuated_date = None
             profil_update_date = None
+            gift_sent_date = None
             if 'voucher_code' in dbitem:
                 voucher_code = dbitem['voucher_code']
             if 'attribuated_date' in dbitem:
                 attribuated_date = dbitem['attribuated_date']
             if 'profil_update_date' in dbitem:
                 profil_update_date = dbitem['profil_update_date']
+            if 'gift_sent_date' in dbitem:
+                gift_sent_date = dbitem['gift_sent_date']
 
-            return User(dbitem['user_id'], dbitem['certification_level'], voucher_code, attribuated_date, profil_update_date)
+            return User(dbitem['user_id'], dbitem['certification_level'], voucher_code, attribuated_date, profil_update_date, gift_sent_date)
 
     @classmethod
     def get(cls, user_id):
