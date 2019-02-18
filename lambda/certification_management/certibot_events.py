@@ -3,7 +3,7 @@ import logging
 import re
 import requests
 import urllib
-from certification_management.business import Certification
+from certification_management.business import Level
 from certification_management.business import User
 from certification_management.business import Voucher
 from utils.configuration import Configuration
@@ -43,9 +43,9 @@ class CertibotEvents:
             user_level_name = re.search(' \((.+?) level\)', slack_event['user']['profile']['fields']['XfELFP2WL9']['value'].lower()).group(1)
 
             user = User.get(user_udid)
-            certification = Certification.getByName(user_level_name)
+            level = Level.getByName(user_level_name)
 
-            if user and certification:
-                user.passesCertification(certification)
+            if user and level:
+                user.passesCertification(level)
 
         return "200 OK"

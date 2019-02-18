@@ -1,6 +1,6 @@
 import logging
 import time
-from certification_management.business import Certification
+from certification_management.business import Level
 from certification_management.business import User
 from certification_management.business import Voucher
 from certification_management.business import Milestone
@@ -22,29 +22,29 @@ class CertibotReport:
 
     def launch(self, reportType):
         start_time = time.time()
-        certifications = Certification.getAll()
+        levels = Level.getAll()
         vouchers = Voucher.getAll()
         milestones = Milestone.getAll()
 
         users = User.getAll()
         users_with_voucher = [user for user in users if user.voucher_code]
-        users_with_profil = [user for user in users if user.profil_update_date]
+        users_with_profile = [user for user in users if user.profile_update_date]
         users_without_gift = [user for user in users if user.gift_sent_date]
 
         end_time = time.time()
 
         global_message = "*" + str(len(users)) + "* users in the challenge\n" \
             + "*" + str(len(users_with_voucher)) + "* already claimed a voucher code and " \
-            + "*" + str(len(users_with_profil)) + "* have updated their profil"
+            + "*" + str(len(users_with_profile)) + "* have updated their profile"
 
         if len(milestones) > 0:
             global_message += "\n"
             for milestone in milestones:
-                users_involved = [user for user in users_with_profil if user.profil_update_date <= milestone.date]
+                users_involved = [user for user in users_with_profile if user.profile_update_date <= milestone.date]
 
                 stars_earned = 0
                 for user in users_involved:
-                    stars_earned += next((certification.stars for certification in certifications if certification.level == user.certification_level), None)
+                    stars_earned += next((level.stars for level in levels if level.id == user.certification_level), None)
 
                 users_involved_count = len(users_involved)
                 global_message += "\n*Milestone #" + str(milestone.id) + "* for _" + milestone.date.strftime('%m/%d/%Y') + "_ - " + str(stars_earned) + "/" + str(milestone.goal) + " :star:"
@@ -72,7 +72,7 @@ class CertibotReport:
 
         elif reportType == 'admin':
             # Admin report
-            admin_message = "*" + str(len(certifications)) + "* certification levels\n" \
+            admin_message = "*" + str(len(levels)) + "* certification levels\n" \
                 + "*" + str(len(vouchers)) + "* voucher codes\n" \
                 + global_message
             snippet = "\n".join([user.email for user in users_without_gift])

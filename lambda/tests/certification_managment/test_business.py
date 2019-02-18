@@ -4,18 +4,18 @@ from moto import mock_dynamodb2
 import boto3
 import time
 from boto3.dynamodb.conditions import Key, Attr
-from certification_management.business import Certification
+from certification_management.business import Level
 from certification_management.business import User
 from certification_management.business import Voucher
 
-class test_certification(unittest.TestCase):
+class test_level(unittest.TestCase):
     mock_dynamodb = mock_dynamodb2()
 
     def setUp(self):
         self.mock_dynamodb.start()
         self.dynamodb = boto3.resource('dynamodb')
         self.dynamodb.create_table(
-            TableName='awscert_certification',
+            TableName='awscert_level',
                 KeySchema=[
                     {
                         'AttributeName': 'name',
@@ -74,131 +74,138 @@ class test_certification(unittest.TestCase):
                     'WriteCapacityUnits': 5
                 }
         )
-        self.certification_table = self.dynamodb.Table('awscert_certification')
+        self.level_table = self.dynamodb.Table('awscert_level')
         self.user_table = self.dynamodb.Table('awscert_user')
         self.voucher_table = self.dynamodb.Table('awscert_voucher')
 
     def tearDown(self):
         self.mock_dynamodb.stop()
 
-    def test_certification_get(self):
-        certification_name = 'test_certif_get_name'
-        certification_level = 'test_certif_get_level'
+    def test_level_get(self):
+        level_id = 'test_level_get_id'
+        level_name = 'test_level_get_name'
 
         #given
-        self.certification_table.put_item(Item={'name': certification_name, 'level': certification_level})
+        self.level_table.put_item(Item={'id': level_id, 'name': level_name})
 
         #when
-        certification = Certification.get(certification_level)
+        level = Level.get(level_id)
 
         #then
-        assert certification.level == certification_level
-        assert certification.name == certification_name
+        assert level.id == level_id
+        assert level.name == level_name
 
-    def test_certification_get_nonexistent(self):
-        certification_level = 'test_certif_get_level'
+    def test_level_get_nonexistent(self):
+        level_id = 'test_level_get_id'
 
         #given
 
         #when
-        certification = Certification.get(certification_level)
+        level = Level.get(level_id)
 
         #then
-        assert certification == None
+        assert level == None
 
-    def test_certification_add(self):
-        certification_name = 'test_certif_add_name'
-        certification_level = 'test_certif_add_level'
+    def test_level_add(self):
+        level_id = 'test_level_add_id'
+        level_name = 'test_level_add_name'
+        level_stars = 1
 
         #given
-        certification = Certification(certification_name, certification_level)
+        level = Level(level_id, level_name, level_stars)
 
         #when
-        response = certification.add()
+        response = level.add()
 
         #then
         assert response == True
-        certifs = self.certification_table.scan(FilterExpression=Attr('level').eq(certification_level))['Items']
+        certifs = self.level_table.query(KeyConditionExpression=Key('id').eq(level_id))['Items']
         assert len(certifs) == 1
-        assert certifs[0]['name'] == certification_name
-        assert certifs[0]['level'] == certification_level
+        assert certifs[0]['id'] == level_id
+        assert certifs[0]['name'] == level_name
+        assert certifs[0]['stars'] == level_stars
 
-    def test_certification_remove(self):
-        certification_name = 'test_certif_remove_name'
-        certification_level = 'test_certif_remove_level'
+    def test_level_remove(self):
+        level_id = 'test_level_remove_id'
+        level_name = 'test_level_remove_name'
+        level_stars = 1
 
         #given
-        self.certification_table.put_item(Item={'name': certification_name, 'level': certification_level})
-        certification = Certification(certification_name, certification_level)
+        self.level_table.put_item(Item={'id': level_id, 'name': level_name})
+        level = Level(level_id, level_name, level_stars)
 
         #when
-        response = certification.remove()
+        response = level.remove()
 
         #then
         assert response == True
-        certifs = self.certification_table.scan(FilterExpression=Attr('level').eq(certification_level))['Items']
+        certifs = self.level_table.query(KeyConditionExpression=Key('id').eq(level_id))['Items']
         assert len(certifs) == 0
 
-    def test_certification_remove_nonexistent(self):
-        certification_name = 'test_certif_remove_name'
-        certification_level = 'test_certif_remove_level'
+    def test_level_remove_nonexistent(self):
+        level_id = 'test_level_remove_id'
+        level_name = 'test_level_remove_name'
+        level_stars = 1
 
         #given
-        certification = Certification(certification_name, certification_level)
+        level = Level(level_id, level_name, level_stars)
 
         #when
-        response = certification.remove()
+        response = level.remove()
 
         #then
         assert response == True
-        certifs = self.certification_table.scan(FilterExpression=Attr('level').eq(certification_level))['Items']
+        certifs = self.level_table.query(KeyConditionExpression=Key('id').eq(level_id))['Items']
         assert len(certifs) == 0
 
-    def test_certification_remove_link_to_voucher(self):
-        certification_name = 'test_certif_remove_name'
-        certification_level = 'test_certif_remove_level'
-        voucher_code = 'test_certif_remove_voucher_code'
+    def test_level_remove_link_to_voucher(self):
+        level_id = 'test_level_remove_id'
+        level_name = 'test_level_remove_name'
+        level_stars = 1
+        voucher_code = 'test_level_remove_voucher_code'
 
         #given
-        self.certification_table.put_item(Item={'name': certification_name, 'level': certification_level})
-        self.voucher_table.put_item(Item={'code': voucher_code, 'certification_level': certification_level})
-        certification = Certification(certification_name, certification_level)
+        self.level_table.put_item(Item={'id': level_id, 'name': level_name})
+        self.voucher_table.put_item(Item={'code': voucher_code, 'certification_level': level_id})
+        level = Level(level_id, level_name, level_stars)
 
         #when
-        response = certification.remove()
+        response = level.remove()
 
         #then
         assert response == False
-        certifs = self.certification_table.scan(FilterExpression=Attr('level').eq(certification_level))['Items']
+        certifs = self.level_table.query(KeyConditionExpression=Key('id').eq(level_id))['Items']
         assert len(certifs) == 1
 
-    def test_certification_remove_used_by_user(self):
-        certification_name = 'test_certif_remove_name'
-        certification_level = 'test_certif_remove_level'
-        user_id = 'test_certif_remove_user_id'
+    def test_level_remove_used_by_user(self):
+        level_id = 'test_level_remove_id'
+        level_name = 'test_level_remove_name'
+        level_stars = 1
+        user_id = 'test_level_remove_user_id'
 
         #given
-        self.certification_table.put_item(Item={'name': certification_name, 'level': certification_level})
-        self.user_table.put_item(Item={'user_id': user_id, 'certification_level': certification_level})
-        certification = Certification(certification_name, certification_level)
+        self.level_table.put_item(Item={'id': level_id, 'name': level_name})
+        self.user_table.put_item(Item={'user_id': user_id, 'certification_level': level_id})
+        level = Level(level_id, level_name, level_stars)
 
         #when
-        response = certification.remove()
+        response = level.remove()
 
         #then
         assert response == False
-        certifs = self.certification_table.scan(FilterExpression=Attr('level').eq(certification_level))['Items']
+        certifs = self.level_table.query(KeyConditionExpression=Key('id').eq(level_id))['Items']
         assert len(certifs) == 1
 
-    def test_certification_str(self):
-        certification_name = 'test_certif_str_name'
-        certification_level = 'test_certif_str_level'
+    def test_level_str(self):
+        level_name = 'test_level_str_name'
+        certification_level = 'test_level_str_level'
+        level_stars = 1
 
         #given
-        certification = Certification(certification_name, certification_level)
+        level = Level(certification_level, level_name, level_stars)
 
         #when
-        response = str(certification)
+        response = str(level)
 
         #then
         assert response != None
@@ -251,7 +258,7 @@ class test_user(unittest.TestCase):
                 }
         )
         self.dynamodb.create_table(
-            TableName='awscert_certification',
+            TableName='awscert_level',
                 KeySchema=[
                     {
                         'AttributeName': 'name',
@@ -272,7 +279,7 @@ class test_user(unittest.TestCase):
         )
         self.user_table = self.dynamodb.Table('awscert_user')
         self.voucher_table = self.dynamodb.Table('awscert_voucher')
-        self.certification_table = self.dynamodb.Table('awscert_certification')
+        self.level_table = self.dynamodb.Table('awscert_level')
 
     def tearDown(self):
         self.mock_dynamodb.stop()
@@ -315,10 +322,10 @@ class test_user(unittest.TestCase):
         certification_level = 'test_user_get_level'
         voucher_code = 'test_user_get_voucher_code'
         attribuated_date = 'test_user_get_attribuated_date'
-        profil_update_date = 'test_user_get_profil_update_date'
+        profile_update_date = 'test_user_get_profile_update_date'
 
         #given
-        self.user_table.put_item(Item={'user_id': user_id, 'certification_level': certification_level, 'voucher_code': voucher_code, 'attribuated_date': attribuated_date, 'profil_update_date': profil_update_date})
+        self.user_table.put_item(Item={'user_id': user_id, 'certification_level': certification_level, 'voucher_code': voucher_code, 'attribuated_date': attribuated_date, 'profile_update_date': profile_update_date})
 
         #when
         user = User.get(user_id)
@@ -328,7 +335,7 @@ class test_user(unittest.TestCase):
         assert user.certification_level == certification_level
         assert user.voucher_code == voucher_code
         assert user.attribuated_date == attribuated_date
-        assert user.profil_update_date == profil_update_date
+        assert user.profile_update_date == profile_update_date
 
     def test_user_get_nonexistent(self):
         user_id = 'test_user_get_id'
@@ -453,75 +460,79 @@ class test_user(unittest.TestCase):
 
     def test_user_passesCertification(self):
         user_id = 'test_user_passes_id'
-        certification_name = 'test_user_passes_certification_name'
-        certification_level = 'test_user_passes_certification_level'
+        level_id = 'test_level_passes_id'
+        level_name = 'test_user_passes_level_name'
+        level_stars = 1
         voucher_code = 'test_user_passes_voucher_code'
 
         #given
-        self.user_table.put_item(Item={'user_id': user_id, 'certification_level': certification_level, 'voucher_code': voucher_code})
-        self.certification_table.put_item(Item={'name': certification_name, 'certification_level': certification_level})
-        user = User(user_id, certification_level, voucher_code)
-        certification = Certification(certification_name, certification_level)
+        self.user_table.put_item(Item={'user_id': user_id, 'certification_level': level_id, 'voucher_code': voucher_code})
+        self.level_table.put_item(Item={'id': level_id, 'name': level_name})
+        user = User(user_id, level_id, voucher_code)
+        level = Level(level_id, level_name, level_stars)
 
         #when
-        response = user.passesCertification(certification)
+        response = user.passesCertification(level)
 
         #then
         assert response == True
-        assert user.profil_update_date == time.strftime('%d/%m/%Y',time.localtime())
+        assert user.profile_update_date == time.strftime('%d/%m/%Y',time.localtime())
 
     def test_user_passesCertification_already_saved(self):
         user_id = 'test_user_passes_id'
-        certification_name = 'test_user_passes_certification_name'
+        level_name = 'test_user_passes_level_name'
         certification_level = 'test_user_passes_certification_level'
+        level_stars = 1
         voucher_code = 'test_user_passes_voucher_code'
         attribuated_date = 'test_user_passes_attribuated_date'
-        profil_update_date = 'test_user_passes_profil_update_date'
+        profile_update_date = 'test_user_passes_profile_update_date'
 
         #given
-        user = User(user_id, certification_level, voucher_code, attribuated_date, profil_update_date)
-        certification = Certification(certification_name, certification_level)
+        user = User(user_id, certification_level, voucher_code, attribuated_date, profile_update_date)
+        level = Level(certification_level, level_name, level_stars)
 
         #when
-        response = user.passesCertification(certification)
+        response = user.passesCertification(level)
 
         #then
         assert response == False
-        assert user.profil_update_date == profil_update_date
+        assert user.profile_update_date == profile_update_date
 
     def test_user_passesCertification_wrong_level(self):
         user_id = 'test_user_passes_id'
         user_level = 'test_user_passes_level'
-        certification_name = 'test_user_passes_certification_name'
+        level_name = 'test_user_passes_level_name'
         certification_level = 'test_user_passes_certification_level'
+        level_stars = 1
         voucher_code = 'test_user_passes_voucher_code'
 
         #given
         user = User(user_id, user_level, voucher_code)
-        certification = Certification(certification_name, certification_level)
+        level = Level(certification_level, level_name, level_stars)
 
         #when
-        response = user.passesCertification(certification)
+        response = user.passesCertification(level)
 
         #then
         assert response == False
-        assert user.profil_update_date == None
+        assert user.profile_update_date == None
 
     def test_user_passesCertification_without_voucher(self):
         user_id = 'test_user_passes_id'
-        certification_name = 'test_user_passes_certification_name'
+        level_name = 'test_user_passes_level_name'
         certification_level = 'test_user_passes_certification_level'
+        level_stars = 1
 
         #given
         user = User(user_id, certification_level)
-        certification = Certification(certification_name, certification_level)
+        level = Level(certification_level, level_name, level_stars)
 
         #when
-        response = user.passesCertification(certification)
+        response = user.passesCertification(level)
 
         #then
         assert response == False
-        assert user.profil_update_date == None
+        assert user.profile_update_date == None
 
     def test_user_str_without_voucher(self):
         user_id = 'test_user_str_id'

@@ -3,7 +3,7 @@ import logging
 import re
 import requests
 import urllib
-from certification_management.business import Certification
+from certification_management.business import Level
 from certification_management.business import User
 from certification_management.business import Voucher
 from utils.configuration import Configuration
@@ -68,26 +68,26 @@ class CertibotCommands:
         if user:
             if user.voucher_code:
                 voucher = Voucher.get(user.voucher_code)
-                certification = Certification.get(voucher.certification_level)
+                level = Level.get(voucher.certification_level)
                 payload = {
-                    "text": "Hi! Your personal voucher code for *" + certification.name + \
+                    "text": "Hi! Your personal voucher code for *" + level.name + \
                     "* level has been already requested by you: *" + voucher.code + \
                     "*. Please note that your voucher code is valid until *" + voucher.availability.strftime('%m/%d/%Y') + "*."
                 }
             else:
                 try:
                     voucher = Voucher.getAvailable(user.certification_level)
-                    certification = Certification.get(voucher.certification_level)
+                    level = Level.get(voucher.certification_level)
                     if user.attribuateVoucher(voucher):
                         payload = {
-                            "text": "Hi! Your personal voucher code for *" + certification.name + \
+                            "text": "Hi! Your personal voucher code for *" + level.name + \
                             "* level has been requested by you: *" + voucher.code + \
                             "*. Please note that your voucher code is valid until *" + voucher.availability.strftime('%m/%d/%Y') + "*."
                         }
                 except Exception as e:
                     self.logger.warn(e)
                     payload = {
-                        "text": "Hi! Unfortunately there are no more codes for *" + certification.name + "* level available. " + \
+                        "text": "Hi! Unfortunately there are no more codes for *" + level.name + "* level available. " + \
                         "Please contact <@UBRJ09SBE> for more information and the ordering of new voucher codes."
                     }
         else:
@@ -127,10 +127,10 @@ class CertibotCommands:
             if user:
                 if user.voucher_code:
                     voucher = Voucher.get(user.voucher_code)
-                    certification = Certification.get(voucher.certification_level)
+                    level = Level.get(voucher.certification_level)
 
                     payload = {
-                        "text": "Hi! The personal voucher code for *" + user_name + "* for *" + certification.name + \
+                        "text": "Hi! The personal voucher code for *" + user_name + "* for *" + level.name + \
                         "* level is: *" + voucher.code + \
                         "*. Please note that this voucher code is valid until *" + voucher.availability.strftime('%m/%d/%Y') + "*."
                     }
@@ -173,14 +173,14 @@ class CertibotCommands:
 
             user = User.get(user_udid)
             if user:
-                if user.profil_update_date:
+                if user.profile_update_date:
                     if user.sendGift():
                         payload = {
                             "text": "Hi! Thank you for sending a gift to *" + user_name + "*."
                         }
                 else:
                     payload = {
-                        "text": "*" + user_name + "* did not update his/her profil yet."
+                        "text": "*" + user_name + "* did not update his/her profile yet."
                     }
             else:
                 payload = {

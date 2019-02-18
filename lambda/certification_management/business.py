@@ -4,69 +4,69 @@ import time
 from boto3.dynamodb.conditions import Key, Attr
 
 
-class Certification:
-    certifications = boto3.resource('dynamodb').Table('awscert_certification')
+class Level:
+    levels = boto3.resource('dynamodb').Table('awscert_level')
 
-    def __init__(self, name, level, stars):
+    def __init__(self, id, name, stars):
+        self.id = id
         self.name = name
-        self.level = level
         self.stars = stars
 
     def __str__(self):
-        return "Name: " + self.name + ", level: " + self.level + ", stars: " + self.stars
+        return "Id: " + self.id + ", name: " + self.name + ", stars: " + self.stars
 
     def add(self):
-        Certification.certifications.put_item(Item={'name': self.name, 'level': self.level, 'stars': self.stars})
+        Level.levels.put_item(Item={'id': self.id, 'name': self.name, 'stars': self.stars})
         return True
 
     def remove(self):
-        if len(Voucher.vouchers.scan(FilterExpression=Attr('certification_level').eq(self.level))['Items']) == 0 \
-           and len(User.users.scan(FilterExpression=Attr('certification_level').eq(self.level))['Items']) == 0:
-            Certification.certifications.delete_item(Key={'name': self.name})
+        if len(Voucher.vouchers.scan(FilterExpression=Attr('certification_level').eq(self.id))['Items']) == 0 \
+           and len(User.users.scan(FilterExpression=Attr('certification_level').eq(self.id))['Items']) == 0:
+            Level.levels.delete_item(Key={'id': self.id})
             return True
         return False
 
     @classmethod
     def __map(cls, dbitem):
         if dbitem:
-            return Certification(dbitem['name'], dbitem['level'], dbitem['stars'])
+            return Level(dbitem['id'], dbitem['name'], dbitem['stars'])
 
     @classmethod
-    def get(cls, level):
-        dbcertifications = Certification.certifications.scan(FilterExpression=Attr('level').eq(level))['Items']
-        if len(dbcertifications) > 0:
-            return Certification.__map(dbcertifications[0])
+    def get(cls, id):
+        dblevels = Level.levels.query(KeyConditionExpression=Key('id').eq(id))['Items']
+        if len(dblevels) > 0:
+            return Level.__map(dblevels[0])
 
     @classmethod
     def getAll(cls):
-        certifications = list()
-        for certification in Certification.certifications.scan()['Items']:
-            certifications.append(Certification.__map(certification))
-        certifications.sort(key=lambda certification: certification.level)
-        return certifications
+        levels = list()
+        for level in Level.levels.scan()['Items']:
+            levels.append(Level.__map(level))
+        levels.sort(key=lambda level: level.id)
+        return levels
 
     @classmethod
     def getByName(cls, name):
-        dbcertifications = Certification.certifications.query(KeyConditionExpression=Key('name').eq(name))['Items']
-        if len(dbcertifications) > 0:
-            return Certification.__map(dbcertifications[0])
+        dblevels = Level.levels.scan(FilterExpression=Attr('name').eq(name))['Items']
+        if len(dblevels) > 0:
+            return Level.__map(dblevels[0])
 
 
 class User:
     users = boto3.resource('dynamodb').Table('awscert_user')
 
-    def __init__(self, user_id, certification_level, voucher_code=None, attribuated_date=None, profil_update_date=None, gift_sent_date=None):
+    def __init__(self, user_id, certification_level, voucher_code=None, attribuated_date=None, profile_update_date=None, gift_sent_date=None):
         self.user_id = user_id
         self.certification_level = certification_level
         self.voucher_code = voucher_code
         self.attribuated_date = None
-        self.profil_update_date = None
+        self.profile_update_date = None
         self.gift_sent_date = None
         if attribuated_date:
             self.attribuated_date = datetime.datetime.strptime(attribuated_date, "%d/%m/%Y").date()
-        self.profil_update_date = None
-        if profil_update_date:
-            self.profil_update_date = datetime.datetime.strptime(profil_update_date, "%d/%m/%Y").date()
+        self.profile_update_date = None
+        if profile_update_date:
+            self.profile_update_date = datetime.datetime.strptime(profile_update_date, "%d/%m/%Y").date()
         if gift_sent_date:
             self.gift_sent_date = datetime.datetime.strptime(gift_sent_date, "%d/%m/%Y").date()
 
@@ -77,8 +77,8 @@ class User:
             str_format += ", voucher_code: " + self.voucher_code
         else:
             str_format += ", no voucher code"
-        if self.profil_update_date:
-            str_format += ", profil_update_date: " + self.profil_update_date.strftime('%m/%d/%Y')
+        if self.profile_update_date:
+            str_format += ", profile_update_date: " + self.profile_update_date.strftime('%m/%d/%Y')
         else:
             str_format += ", certification not yet passed"
         if self.gift_sent_date:
@@ -108,17 +108,17 @@ class User:
             return True
         return False
 
-    def passesCertification(self, certification):
-        if not self.profil_update_date and certification.level == self.certification_level and self.voucher_code:
-            self.profil_update_date = time.strftime('%d/%m/%Y',time.localtime())
+    def passesCertification(self, level):
+        if not self.profile_update_date and level.id == self.certification_level and self.voucher_code:
+            self.profile_update_date = time.strftime('%d/%m/%Y',time.localtime())
             User.users.update_item(Key={'user_id': self.user_id},
-                                   UpdateExpression='SET profil_update_date = :profil_update_date',
-                                   ExpressionAttributeValues={':profil_update_date': self.profil_update_date.strftime('%m/%d/%Y')})
+                                   UpdateExpression='SET profile_update_date = :profile_update_date',
+                                   ExpressionAttributeValues={':profile_update_date': self.profile_update_date.strftime('%m/%d/%Y')})
             return True
         return False
 
     def sendGift(self):
-        if self.profil_update_date and not self.gift_sent_date:
+        if self.profile_update_date and not self.gift_sent_date:
             self.gift_sent_date = time.strftime('%d/%m/%Y',time.localtime())
             User.users.update_item(Key={'user_id': self.user_id},
                                    UpdateExpression='SET gift_sent_date = :gift_sent_date',
@@ -131,18 +131,18 @@ class User:
         if dbitem:
             voucher_code = None
             attribuated_date = None
-            profil_update_date = None
+            profile_update_date = None
             gift_sent_date = None
             if 'voucher_code' in dbitem:
                 voucher_code = dbitem['voucher_code']
             if 'attribuated_date' in dbitem:
                 attribuated_date = dbitem['attribuated_date']
-            if 'profil_update_date' in dbitem:
-                profil_update_date = dbitem['profil_update_date']
+            if 'profile_update_date' in dbitem:
+                profile_update_date = dbitem['profile_update_date']
             if 'gift_sent_date' in dbitem:
                 gift_sent_date = dbitem['gift_sent_date']
 
-            return User(dbitem['user_id'], dbitem['certification_level'], voucher_code, attribuated_date, profil_update_date, gift_sent_date)
+            return User(dbitem['user_id'], dbitem['certification_level'], voucher_code, attribuated_date, profile_update_date, gift_sent_date)
 
     @classmethod
     def get(cls, user_id):
