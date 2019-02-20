@@ -100,7 +100,7 @@ class User:
     def attribuateVoucher(self, voucher):
         if not self.voucher_code and self.certification_level == voucher.certification_level:
             self.voucher_code = voucher.code
-            self.attribuated_date = time.localtime()
+            self.attribuated_date = datetime.datetime.now()
             User.users.update_item(Key={'user_id': self.user_id},
                                    UpdateExpression='SET voucher_code = :voucher_code, attribuated_date = :attribuated_date',
                                    ExpressionAttributeValues={':voucher_code': self.voucher_code,
@@ -110,7 +110,7 @@ class User:
 
     def passesCertification(self, level):
         if not self.profile_update_date and level.id == self.certification_level and self.voucher_code:
-            self.profile_update_date = time.strftime('%d/%m/%Y',time.localtime())
+            self.profile_update_date = datetime.datetime.now()
             User.users.update_item(Key={'user_id': self.user_id},
                                    UpdateExpression='SET profile_update_date = :profile_update_date',
                                    ExpressionAttributeValues={':profile_update_date': self.profile_update_date.strftime('%m/%d/%Y')})
@@ -119,7 +119,7 @@ class User:
 
     def sendGift(self):
         if self.profile_update_date and not self.gift_sent_date:
-            self.gift_sent_date = time.strftime('%d/%m/%Y',time.localtime())
+            self.gift_sent_date = datetime.datetime.now()
             User.users.update_item(Key={'user_id': self.user_id},
                                    UpdateExpression='SET gift_sent_date = :gift_sent_date',
                                    ExpressionAttributeValues={':gift_sent_date': self.gift_sent_date.strftime('%m/%d/%Y')})
