@@ -4,7 +4,7 @@ import re
 import requests
 import urllib
 from certification_management.business import Level
-from certification_management.business import User
+from certification_management.business import UserCertification
 from certification_management.business import Voucher
 from utils.configuration import Configuration
 
@@ -64,25 +64,26 @@ class CertibotCommands:
 
     def getVoucher(self):
         payload = None
-        user = User.get(self.user_id)
+        user = UserCertification.get(self.user_id)
         if user:
+            user = user[0] # For now we force to use the first UserCertification - TODO manage multiple certification levels for one user
             if user.voucher_code:
                 voucher = Voucher.get(user.voucher_code)
-                level = Level.get(voucher.certification_level)
+                level = Level.get(voucher.level_id)
                 payload = {
                     "text": "Hi! Your personal voucher code for *" + level.name + \
                     "* level has been already requested by you: *" + voucher.code + \
-                    "*. Please note that your voucher code is valid until *" + voucher.availability.strftime('%m/%d/%Y') + "*."
+                    "*. Please note that your voucher code is valid until *" + voucher.availability.strftime('%d/%m/%Y') + "*."
                 }
             else:
                 try:
-                    voucher = Voucher.getAvailable(user.certification_level)
-                    level = Level.get(voucher.certification_level)
+                    voucher = Voucher.getAvailable(int(user.level_id))
+                    level = Level.get(voucher.level_id)
                     if user.attribuateVoucher(voucher):
                         payload = {
                             "text": "Hi! Your personal voucher code for *" + level.name + \
                             "* level has been requested by you: *" + voucher.code + \
-                            "*. Please note that your voucher code is valid until *" + voucher.availability.strftime('%m/%d/%Y') + "*."
+                            "*. Please note that your voucher code is valid until *" + voucher.availability.strftime('%d/%m/%Y') + "*."
                         }
                 except Exception as e:
                     self.logger.warn(e)
@@ -123,16 +124,17 @@ class CertibotCommands:
                 user_udid = 'error'
                 user_name = 'error'
 
-            user = User.get(user_udid)
+            user = UserCertification.get(user_udid)
             if user:
+                user = user[0] # For now we force to use the first UserCertification - TODO manage multiple certification levels for one user
                 if user.voucher_code:
                     voucher = Voucher.get(user.voucher_code)
-                    level = Level.get(voucher.certification_level)
+                    level = Level.get(voucher.level_id)
 
                     payload = {
                         "text": "Hi! The personal voucher code for *" + user_name + "* for *" + level.name + \
                         "* level is: *" + voucher.code + \
-                        "*. Please note that this voucher code is valid until *" + voucher.availability.strftime('%m/%d/%Y') + "*."
+                        "*. Please note that this voucher code is valid until *" + voucher.availability.strftime('%d/%m/%Y') + "*."
                     }
                 else:
                     payload = {
@@ -171,8 +173,9 @@ class CertibotCommands:
                 user_udid = 'error'
                 user_name = 'error'
 
-            user = User.get(user_udid)
+            user = UserCertification.get(user_udid)
             if user:
+                user = user[0] # For now we force to use the first UserCertification - TODO manage multiple certification levels for one user
                 if user.profile_update_date:
                     if user.sendGift():
                         payload = {

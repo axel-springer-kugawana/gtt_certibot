@@ -1,7 +1,7 @@
 import logging
 import time
 from certification_management.business import Level
-from certification_management.business import User
+from certification_management.business import UserCertification
 from certification_management.business import Voucher
 from certification_management.business import Milestone
 from utils.configuration import Configuration
@@ -26,10 +26,10 @@ class CertibotReport:
         vouchers = Voucher.getAll()
         milestones = Milestone.getAll()
 
-        users = User.getAll()
+        users = UserCertification.getAll()
         users_with_voucher = [user for user in users if user.voucher_code]
         users_with_profile = [user for user in users if user.profile_update_date]
-        users_without_gift = [user for user in users if user.gift_sent_date]
+        users_without_gift = [user for user in users_with_profile if not user.gift_sent_date]
 
         end_time = time.time()
 
@@ -44,10 +44,10 @@ class CertibotReport:
 
                 stars_earned = 0
                 for user in users_involved:
-                    stars_earned += next((level.stars for level in levels if level.id == user.certification_level), None)
+                    stars_earned += next((level.stars for level in levels if level.id == user.level_id), None)
 
                 users_involved_count = len(users_involved)
-                global_message += "\n*Milestone #" + str(milestone.id) + "* for _" + milestone.date.strftime('%m/%d/%Y') + "_ - " + str(stars_earned) + "/" + str(milestone.goal) + " :star:"
+                global_message += "\n*Milestone #" + str(milestone.id) + "* for _" + milestone.date.strftime('%d/%m/%Y') + "_ - " + str(stars_earned) + "/" + str(milestone.goal) + " :star:"
                 if stars_earned > 0:
                     global_message += " _(" + str(users_involved_count) + " people involved)_"
 
@@ -75,18 +75,20 @@ class CertibotReport:
             admin_message = "*" + str(len(levels)) + "* certification levels\n" \
                 + "*" + str(len(vouchers)) + "* voucher codes\n" \
                 + global_message
-            snippet = "\n".join([user.email for user in users_without_gift])
+            users_details = "\n".join(["<@" + user.user_id + ">" for user in users_without_gift])
 
             if self.config.post_to_slack:
                 self.kugawana_tool.post_notification_to_kugawana_slack(slack_channel=self.config.admin_slack_channel,
-                                                                    title="Today's AWS certification report!",
-                                                                    title_link="https://aws.amazon.com/fr/certification/",
-                                                                    message=admin_message,
-                                                                    level="good")
-                if len(snippet) > 0:
-                    self.kugawana_tool.post_snippet_to_kugawana_slack(slack_channel=self.config.admin_slack_channel,
-                                                                      post_title="List of users who did not receive their gift",
-                                                                      post_message=snippet)
+                                                                       title="Today's AWS certification report!",
+                                                                       title_link="https://aws.amazon.com/fr/certification/",
+                                                                       message=admin_message,
+                                                                       level="good")
+                if len(users_details) > 0:
+                    self.kugawana_tool.post_notification_to_kugawana_slack(slack_channel=self.config.admin_slack_channel,
+                                                                           title="List of users who did not receive their gift",
+                                                                           #title_link="https://aws.amazon.com/fr/certification/",
+                                                                           message=users_details,
+                                                                           level="0576b9")
             else:
                 print(admin_message)
-                print(snippet)
+                print(users_details)

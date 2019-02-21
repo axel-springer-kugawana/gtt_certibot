@@ -4,24 +4,65 @@ import time
 from boto3.dynamodb.conditions import Key, Attr
 
 
-class Level:
-    levels = boto3.resource('dynamodb').Table('awscert_level')
+class Certification:
+    certifications = boto3.resource('dynamodb').Table('certibot_certification')
 
-    def __init__(self, id, name, stars):
+    def __init__(self, id, name):
         self.id = id
         self.name = name
-        self.stars = stars
 
     def __str__(self):
-        return "Id: " + self.id + ", name: " + self.name + ", stars: " + self.stars
+        return "Id: " + self.id + ", name: " + self.name
 
     def add(self):
-        Level.levels.put_item(Item={'id': self.id, 'name': self.name, 'stars': self.stars})
+        Certification.certifications.put_item(Item={'id': self.id, 'name': self.name})
         return True
 
     def remove(self):
-        if len(Voucher.vouchers.scan(FilterExpression=Attr('certification_level').eq(self.id))['Items']) == 0 \
-           and len(User.users.scan(FilterExpression=Attr('certification_level').eq(self.id))['Items']) == 0:
+        if len(Level.levels.scan(FilterExpression=Attr('certification_id').eq(self.id))['Items']) == 0:
+            Certification.certifications.delete_item(Key={'id': self.id})
+            return True
+        return False
+
+    @classmethod
+    def __map(cls, dbitem):
+        if dbitem:
+            return Certification(dbitem['id'], dbitem['name'])
+
+    @classmethod
+    def get(cls, id):
+        dbcertifications = Certification.certifications.query(KeyConditionExpression=Key('id').eq(id))['Items']
+        if len(dbcertifications) > 0:
+            return Level.__map(dbcertifications[0])
+
+    @classmethod
+    def getAll(cls):
+        certifications = list()
+        for certification in Certification.certifications.scan()['Items']:
+            certifications.append(Certification.__map(certification))
+        certifications.sort(key=lambda certification: certification.id)
+        return certifications
+
+
+class Level:
+    levels = boto3.resource('dynamodb').Table('certibot_level')
+
+    def __init__(self, id, name, stars, certification_id):
+        self.id = id
+        self.name = name
+        self.certification_id = certification_id
+        self.stars = stars
+
+    def __str__(self):
+        return "Id: " + self.id + ", name: " + self.name + ", certification_id: " + self.certification_id + ", stars: " + self.stars
+
+    def add(self):
+        Level.levels.put_item(Item={'id': self.id, 'name': self.name, 'certification_id': self.certification_id, 'stars': self.stars})
+        return True
+
+    def remove(self):
+        if len(Voucher.vouchers.scan(FilterExpression=Attr('level_id').eq(self.id))['Items']) == 0 \
+           and len(UserCertification.users_certifications.scan(FilterExpression=Attr('level_id').eq(self.id))['Items']) == 0:
             Level.levels.delete_item(Key={'id': self.id})
             return True
         return False
@@ -29,7 +70,7 @@ class Level:
     @classmethod
     def __map(cls, dbitem):
         if dbitem:
-            return Level(dbitem['id'], dbitem['name'], dbitem['stars'])
+            return Level(dbitem['id'], dbitem['name'], dbitem['stars'], dbitem['certification_id'])
 
     @classmethod
     def get(cls, id):
@@ -52,12 +93,12 @@ class Level:
             return Level.__map(dblevels[0])
 
 
-class User:
-    users = boto3.resource('dynamodb').Table('awscert_user')
+class UserCertification:
+    users_certifications = boto3.resource('dynamodb').Table('certibot_user_certification')
 
-    def __init__(self, user_id, certification_level, voucher_code=None, attribuated_date=None, profile_update_date=None, gift_sent_date=None):
+    def __init__(self, user_id, level_id, voucher_code=None, attribuated_date=None, profile_update_date=None, gift_sent_date=None):
         self.user_id = user_id
-        self.certification_level = certification_level
+        self.level_id = level_id
         self.voucher_code = voucher_code
         self.attribuated_date = None
         self.profile_update_date = None
@@ -72,57 +113,57 @@ class User:
 
     def __str__(self):
         str_format = "user_id: " + self.user_id + \
-            ", certification_level: " + self.certification_level
+            ", level_id: " + self.level_id
         if self.voucher_code:
             str_format += ", voucher_code: " + self.voucher_code
         else:
             str_format += ", no voucher code"
         if self.profile_update_date:
-            str_format += ", profile_update_date: " + self.profile_update_date.strftime('%m/%d/%Y')
+            str_format += ", profile_update_date: " + self.profile_update_date.strftime('%d/%m/%Y')
         else:
             str_format += ", certification not yet passed"
         if self.gift_sent_date:
-            str_format += ", gift_sent_date: " + self.gift_sent_date.strftime('%m/%d/%Y')
+            str_format += ", gift_sent_date: " + self.gift_sent_date.strftime('%d/%m/%Y')
         else:
             str_format += ", gift not yet sent"
         return str_format
 
     def add(self):
-        User.users.put_item(Item={'user_id': self.user_id, 'certification_level': self.certification_level})
+        UserCertification.users_certifications.put_item(Item={'user_id': self.user_id, 'level_id': self.level_id})
         return True
 
     def remove(self):
         if not self.voucher_code:
-            User.users.delete_item(Key={'user_id': self.user_id})
+            UserCertification.users_certifications.delete_item(Key={'user_id': self.user_id, 'level_id': self.level_id})
             return True
         return False
 
     def attribuateVoucher(self, voucher):
-        if not self.voucher_code and self.certification_level == voucher.certification_level:
+        if not self.voucher_code and self.level_id == voucher.level_id:
             self.voucher_code = voucher.code
             self.attribuated_date = datetime.datetime.now()
-            User.users.update_item(Key={'user_id': self.user_id},
+            UserCertification.users_certifications.update_item(Key={'user_id': self.user_id, 'level_id': self.level_id},
                                    UpdateExpression='SET voucher_code = :voucher_code, attribuated_date = :attribuated_date',
                                    ExpressionAttributeValues={':voucher_code': self.voucher_code,
-                                                                ':attribuated_date': self.attribuated_date.strftime('%m/%d/%Y')})
+                                                                ':attribuated_date': self.attribuated_date.strftime('%d/%m/%Y')})
             return True
         return False
 
     def passesCertification(self, level):
-        if not self.profile_update_date and level.id == self.certification_level and self.voucher_code:
+        if not self.profile_update_date and level.id == self.level_id and self.voucher_code:
             self.profile_update_date = datetime.datetime.now()
-            User.users.update_item(Key={'user_id': self.user_id},
+            UserCertification.users_certifications.update_item(Key={'user_id': self.user_id, 'level_id': self.level_id},
                                    UpdateExpression='SET profile_update_date = :profile_update_date',
-                                   ExpressionAttributeValues={':profile_update_date': self.profile_update_date.strftime('%m/%d/%Y')})
+                                   ExpressionAttributeValues={':profile_update_date': self.profile_update_date.strftime('%d/%m/%Y')})
             return True
         return False
 
     def sendGift(self):
         if self.profile_update_date and not self.gift_sent_date:
             self.gift_sent_date = datetime.datetime.now()
-            User.users.update_item(Key={'user_id': self.user_id},
+            UserCertification.users_certifications.update_item(Key={'user_id': self.user_id, 'level_id': self.level_id},
                                    UpdateExpression='SET gift_sent_date = :gift_sent_date',
-                                   ExpressionAttributeValues={':gift_sent_date': self.gift_sent_date.strftime('%m/%d/%Y')})
+                                   ExpressionAttributeValues={':gift_sent_date': self.gift_sent_date.strftime('%d/%m/%Y')})
             return True
         return False
 
@@ -142,41 +183,38 @@ class User:
             if 'gift_sent_date' in dbitem:
                 gift_sent_date = dbitem['gift_sent_date']
 
-            return User(dbitem['user_id'], dbitem['certification_level'], voucher_code, attribuated_date, profile_update_date, gift_sent_date)
+            return UserCertification(dbitem['user_id'], dbitem['level_id'], voucher_code, attribuated_date, profile_update_date, gift_sent_date)
 
     @classmethod
     def get(cls, user_id):
-        dbusers = User.users.query(KeyConditionExpression=Key('user_id').eq(user_id))['Items']
-        if len(dbusers) > 0:
-            return User.__map(dbusers[0])
+        dbusers = UserCertification.users_certifications.query(KeyConditionExpression=Key('user_id').eq(user_id))['Items']
+        return [UserCertification.__map(dbuser) for dbuser in dbusers]
 
     @classmethod
     def getAll(cls):
-        users = list()
-        for user in User.users.scan()['Items']:
-            users.append(User.__map(user))
-        return users
+        dbusers = UserCertification.users_certifications.scan()['Items']
+        return [UserCertification.__map(dbuser) for dbuser in dbusers]
 
 
 class Voucher:
-    vouchers = boto3.resource('dynamodb').Table('awscert_voucher')
+    vouchers = boto3.resource('dynamodb').Table('certibot_voucher')
 
-    def __init__(self, code, certification_level, availability):
+    def __init__(self, code, level_id, availability):
         self.code = code
-        self.certification_level = certification_level
+        self.level_id = level_id
         self.availability = datetime.datetime.strptime(availability, "%d/%m/%Y").date()
 
     def __str__(self):
-        str_format = "Code: " + self.code + ", level: " + self.certification_level
+        str_format = "Code: " + self.code + ", level_id: " + self.level_id
         if self.isAvailable():
-            str_format += ", available until " + self.availability.strftime('%m/%d/%Y')
+            str_format += ", available until " + self.availability.strftime('%d/%m/%Y')
         else:
             str_format += "already claimed by " + \
-            User.users.scan(FilterExpression=Attr('voucher_code').eq(self.code))['Items'][0]['user_id']
+            UserCertification.users_certifications.scan(FilterExpression=Attr('voucher_code').eq(self.code))['Items'][0]['user_id']
         return str_format
 
     def add(self):
-        Voucher.vouchers.put_item(Item={'code': self.code, 'certification_level': self.certification_level, 'availability': self.availability.strftime('%m/%d/%Y')})
+        Voucher.vouchers.put_item(Item={'code': self.code, 'level_id': self.level_id, 'availability': self.availability.strftime('%d/%m/%Y')})
         return True
 
     def remove(self):
@@ -186,12 +224,12 @@ class Voucher:
         return False
 
     def isAvailable(self):
-        return len(User.users.scan(FilterExpression=Attr('voucher_code').eq(self.code))['Items']) == 0
+        return len(UserCertification.users_certifications.scan(FilterExpression=Attr('voucher_code').eq(self.code))['Items']) == 0
 
     @classmethod
     def __map(cls, dbitem):
         if dbitem:
-            return Voucher(dbitem['code'], dbitem['certification_level'], dbitem['availability'])
+            return Voucher(dbitem['code'], dbitem['level_id'], dbitem['availability'])
 
     @classmethod
     def get(cls, code):
@@ -207,10 +245,10 @@ class Voucher:
         return vouchers
 
     @classmethod
-    def getAvailable(cls, certification_level):
-        vouchersdb = cls.vouchers.scan(FilterExpression=Attr('certification_level').eq(certification_level))['Items']
+    def getAvailable(cls, level_id):
+        vouchersdb = cls.vouchers.scan(FilterExpression=Attr('level_id').eq(level_id))['Items']
         for voucherdb in vouchersdb:
-            voucher = Voucher(voucherdb['code'], voucherdb['certification_level'], voucherdb['availability'])
+            voucher = Voucher(voucherdb['code'], voucherdb['level_id'], voucherdb['availability'])
             if voucher.isAvailable():
                 return voucher
         return None
@@ -225,7 +263,7 @@ class Milestone:
         self.goal = goal
 
     def __str__(self):
-        return "Id: " + self.id + ", date: " + self.date.strftime('%m/%d/%Y') + ", goal: " + self.goal + " stars"
+        return "Id: " + self.id + ", date: " + self.date.strftime('%d/%m/%Y') + ", goal: " + self.goal + " stars"
 
     @classmethod
     def __map(cls, dbitem):

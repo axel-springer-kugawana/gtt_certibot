@@ -4,7 +4,7 @@ import re
 import requests
 import urllib
 from certification_management.business import Level
-from certification_management.business import User
+from certification_management.business import UserCertification
 from certification_management.business import Voucher
 from utils.configuration import Configuration
 
@@ -42,7 +42,7 @@ class CertibotEvents:
             user_udid = slack_event['user']['id']
             user_level_name = re.search(' \((.+?) level\)', slack_event['user']['profile']['fields']['XfELFP2WL9']['value'].lower()).group(1)
 
-            user = User.get(user_udid)
+            user = UserCertification.get(user_udid) # For now we force to use the first UserCertification - TODO manage multiple certification levels for one user
             level = Level.getByName(user_level_name)
 
             if user and level:
