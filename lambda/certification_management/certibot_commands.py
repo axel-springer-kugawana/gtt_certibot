@@ -65,7 +65,7 @@ class CertibotCommands:
 
     def getVoucher(self):
         payload = None
-        user = UserCertification.get(self.user_id)
+        user = User.get(self.user_id)
         if user:
             for user_certification in user.user_certifications:
                 if not user_certification.voucher_code:
@@ -125,7 +125,7 @@ class CertibotCommands:
                 user_udid = 'error'
                 user_name = 'error'
 
-            user = UserCertification.get(user_udid)
+            user = User.get(user_udid)
             if user:
                 payload = {
                     "blocks": [
