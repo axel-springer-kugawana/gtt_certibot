@@ -32,10 +32,12 @@ class Configuration:
             self.slack_event_token = secret['slack_event_token']
             self.admin_users = secret['admin_users']
             self.slack_bot_token = secret['slack_bot_token']
+            self.slack_app_token = secret['slack_app_token']
             logger.info("AWS secret loaded with success")
         except:
             logger.info("AWS secret failed, fallback with config file")
             self.slack_event_token = config['slack_event_token']
             self.admin_users = config['admin_users']
             self.slack_bot_token = config['slack_bot_token']
+            self.slack_app_token = config['slack_app_token']
             logger.info("Configuration file loaded with success")

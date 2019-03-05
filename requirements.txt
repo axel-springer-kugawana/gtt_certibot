@@ -1,6 +1,7 @@
 hiyapyco
 requests
 slacker
+slackclient
 boto3 #provided
 os #provided
 re #provided

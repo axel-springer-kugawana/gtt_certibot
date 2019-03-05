@@ -19,7 +19,7 @@ class Certification:
         return True
 
     def remove(self):
-        if len(Level.levels.scan(FilterExpression=Attr('certification_id').eq(self.id))['Items']) == 0:
+        if len(Level.getByCertification(self.id)) == 0:
             Certification.certifications.delete_item(Key={'id': self.id})
             return True
         return False
@@ -61,8 +61,8 @@ class Level:
         return True
 
     def remove(self):
-        if len(Voucher.vouchers.scan(FilterExpression=Attr('level_id').eq(self.id))['Items']) == 0 \
-           and len(UserCertification.users_certifications.scan(FilterExpression=Attr('level_id').eq(self.id))['Items']) == 0:
+        if len(Voucher.getByLevel(self.id)) == 0 \
+           and len(UserCertification.getByLevel(self.id)) == 0:
             Level.levels.delete_item(Key={'id': self.id})
             return True
         return False
@@ -81,8 +81,8 @@ class Level:
     @classmethod
     def getAll(cls):
         levels = list()
-        for level in Level.levels.scan()['Items']:
-            levels.append(Level.__map(level))
+        for dblevel in Level.levels.scan()['Items']:
+            levels.append(Level.__map(dblevel))
         levels.sort(key=lambda level: level.id)
         return levels
 
@@ -91,6 +91,44 @@ class Level:
         dblevels = Level.levels.scan(FilterExpression=Attr('name').eq(name))['Items']
         if len(dblevels) > 0:
             return Level.__map(dblevels[0])
+
+    @classmethod
+    def getByCertification(cls, certification_id):
+        dblevels = Level.levels.scan(FilterExpression=Attr('certification_id').eq(certification_id))['Items']
+        return [Level.__map(dblevel) for dblevel in dblevels]
+
+
+class User:
+    def __init__(self, id, user_certifications=None):
+        self.id = id
+        self.user_certifications = user_certifications
+
+    def __str__(self):
+        return "id: " + self.id
+
+    def formatSlackFields(self):
+        fields = list()
+        voucher_infos = "Voucher code: "
+        for user_certification in self.user_certifications:
+            if user_certification.voucher_code:
+                voucher_infos = user_certification.voucher_code \
+                    + "\n_valid until " \
+                    + Voucher.get(user_certification.voucher_code).availability.strftime('%d/%m/%Y') \
+                    + "_"
+            else:
+                voucher_infos = "_not yet requested_"
+
+            field_dict = {}
+            field_dict["type"] = "mrkdwn"
+            field_dict["text"] = "*" + Level.get(user_certification.level_id).name + "*\n" + voucher_infos
+            fields.append(field_dict)
+        return fields
+
+    @classmethod
+    def get(cls, id):
+        user_certifications = UserCertification.get(id)
+        if user_certifications:
+            return User(id, user_certifications)
 
 
 class UserCertification:
@@ -195,6 +233,16 @@ class UserCertification:
         dbusers = UserCertification.users_certifications.scan()['Items']
         return [UserCertification.__map(dbuser) for dbuser in dbusers]
 
+    @classmethod
+    def getByLevel(cls, level_id):
+        dbusers = UserCertification.users_certifications.scan(FilterExpression=Attr('level_id').eq(level_id))['Items']
+        return [UserCertification.__map(dbuser) for dbuser in dbusers]
+
+    @classmethod
+    def getByVoucher(cls, voucher_code):
+        dbusers = UserCertification.users_certifications.scan(FilterExpression=Attr('voucher_code').eq(voucher_code))['Items']
+        return [UserCertification.__map(dbuser) for dbuser in dbusers]
+
 
 class Voucher:
     vouchers = boto3.resource('dynamodb').Table('certibot_voucher')
@@ -224,7 +272,7 @@ class Voucher:
         return False
 
     def isAvailable(self):
-        return len(UserCertification.users_certifications.scan(FilterExpression=Attr('voucher_code').eq(self.code))['Items']) == 0
+        return len(UserCertification.getByVoucher(self.code)) == 0
 
     @classmethod
     def __map(cls, dbitem):
@@ -239,10 +287,8 @@ class Voucher:
 
     @classmethod
     def getAll(cls):
-        vouchers = list()
-        for voucher in Voucher.vouchers.scan()['Items']:
-            vouchers.append(Voucher.__map(voucher))
-        return vouchers
+        dbVouchers = Voucher.vouchers.scan()['Items']
+        return [Voucher.__map(dbvoucher) for dbvoucher in dbVouchers]
 
     @classmethod
     def getAvailable(cls, level_id):
@@ -252,6 +298,11 @@ class Voucher:
             if voucher.isAvailable():
                 return voucher
         return None
+
+    @classmethod
+    def getByLevel(cls, level_id):
+        dbVouchers = Voucher.vouchers.scan(FilterExpression=Attr('level_id').eq(level_id))['Items']
+        return [Voucher.__map(dbvoucher) for dbvoucher in dbVouchers]
 
 
 class Milestone:

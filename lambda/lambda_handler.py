@@ -4,7 +4,6 @@ from certification_management.certibot_events import CertibotEvents
 from certification_management.certibot_report import CertibotReport
 
 def handler(event, context):
-    # This method is the start point for slash commands.
     try:
         environment = os.environ['ENV']
     except KeyError:
@@ -33,3 +32,4 @@ def handler(event, context):
         # This is a Cloudwatch triggered call
         certibot = CertibotReport(environment)
         certibot.launch(event['report'])
+

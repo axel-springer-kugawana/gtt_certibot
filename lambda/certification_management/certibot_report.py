@@ -1,4 +1,5 @@
 import logging
+from slackclient import SlackClient
 import time
 from certification_management.business import Level
 from certification_management.business import UserCertification
@@ -19,6 +20,7 @@ class CertibotReport:
 
         # Tools configuration
         self.kugawana_tool = KugawanaInventoryTool(self.config.slack_bot_token)
+        self.sc = SlackClient(self.config.slack_app_token)
 
     def launch(self, reportType):
         start_time = time.time()
@@ -77,18 +79,39 @@ class CertibotReport:
                 + global_message
             users_details = "\n".join(["<@" + user.user_id + ">" for user in users_without_gift])
 
+            # Check profile synch of all users with voucher
+            users_with_profile_not_tracked = list()
+            for user in users_with_voucher:
+                if not user.profile_update_date:
+                    try:
+                        profile = self.sc.api_call(method="users.profile.get", user=user.user_id)['profile']['fields']['XfELFP2WL9']['value']
+                        if profile:
+                            users_with_profile_not_tracked.append(user)
+                    except Exception as e:
+                        self.logger.warn(e)
+            users_not_tracked = "\n".join(["<@" + user.user_id + ">" for user in users_with_profile_not_tracked])
+
+            footer = "(compute time: " + \
+                str(round(end_time - start_time, 3)) + ")"
+
             if self.config.post_to_slack:
                 self.kugawana_tool.post_notification_to_kugawana_slack(slack_channel=self.config.admin_slack_channel,
-                                                                       title="Today's AWS certification report!",
-                                                                       title_link="https://aws.amazon.com/fr/certification/",
-                                                                       message=admin_message,
-                                                                       level="good")
+                                                                    title="Today's AWS certification report!",
+                                                                    title_link="https://aws.amazon.com/fr/certification/",
+                                                                    message=admin_message,
+                                                                    footer=footer,
+                                                                    level="good")
                 if len(users_details) > 0:
                     self.kugawana_tool.post_notification_to_kugawana_slack(slack_channel=self.config.admin_slack_channel,
-                                                                           title="List of users who did not receive their gift",
-                                                                           #title_link="https://aws.amazon.com/fr/certification/",
-                                                                           message=users_details,
-                                                                           level="0576b9")
+                                                                        title="List of users who did not receive their gift",
+                                                                        message=users_details,
+                                                                        level="0576b9")
+                if len(users_not_tracked) > 0:
+                    self.kugawana_tool.post_notification_to_kugawana_slack(slack_channel=self.config.admin_slack_channel,
+                                                                           title="List of users with their profile not tracked",
+                                                                           message=users_not_tracked,
+                                                                           level="danger")
             else:
                 print(admin_message)
                 print(users_details)
+                print(users_not_tracked)

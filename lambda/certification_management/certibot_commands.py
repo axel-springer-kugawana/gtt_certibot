@@ -4,6 +4,7 @@ import re
 import requests
 import urllib
 from certification_management.business import Level
+from certification_management.business import User
 from certification_management.business import UserCertification
 from certification_management.business import Voucher
 from utils.configuration import Configuration
@@ -66,31 +67,31 @@ class CertibotCommands:
         payload = None
         user = UserCertification.get(self.user_id)
         if user:
-            user = user[0] # For now we force to use the first UserCertification - TODO manage multiple certification levels for one user
-            if user.voucher_code:
-                voucher = Voucher.get(user.voucher_code)
-                level = Level.get(voucher.level_id)
-                payload = {
-                    "text": "Hi! Your personal voucher code for *" + level.name + \
-                    "* level has been already requested by you: *" + voucher.code + \
-                    "*. Please note that your voucher code is valid until *" + voucher.availability.strftime('%d/%m/%Y') + "*."
-                }
-            else:
-                try:
-                    voucher = Voucher.getAvailable(int(user.level_id))
-                    level = Level.get(voucher.level_id)
-                    if user.attribuateVoucher(voucher):
-                        payload = {
-                            "text": "Hi! Your personal voucher code for *" + level.name + \
-                            "* level has been requested by you: *" + voucher.code + \
-                            "*. Please note that your voucher code is valid until *" + voucher.availability.strftime('%d/%m/%Y') + "*."
+            for user_certification in user.user_certifications:
+                if not user_certification.voucher_code:
+                    try:
+                        voucher = Voucher.getAvailable(int(user_certification.level_id))
+                        user_certification.attribuateVoucher(voucher)
+                    except Exception as e:
+                        self.logger.warn(e)
+
+            payload = {
+                "blocks": [
+                    {
+                        "type": "section",
+                        "block_id": "section001",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": "Hi! Here are your personal voucher codes"
                         }
-                except Exception as e:
-                    self.logger.warn(e)
-                    payload = {
-                        "text": "Hi! Unfortunately there are no more codes for *" + level.name + "* level available. " + \
-                        "Please contact <@UBRJ09SBE> for more information and the ordering of new voucher codes."
+                    },
+                    {
+                        "type": "section",
+                        "block_id": "section002",
+                        "fields": user.formatSlackFields()
                     }
+                ]
+            }
         else:
             payload = {
                 "text": "Hi! Unfortunately we couldn't find your personal voucher code in our data base. Please get back to <@UBRJ09SBE>."
@@ -126,23 +127,26 @@ class CertibotCommands:
 
             user = UserCertification.get(user_udid)
             if user:
-                user = user[0] # For now we force to use the first UserCertification - TODO manage multiple certification levels for one user
-                if user.voucher_code:
-                    voucher = Voucher.get(user.voucher_code)
-                    level = Level.get(voucher.level_id)
-
-                    payload = {
-                        "text": "Hi! The personal voucher code for *" + user_name + "* for *" + level.name + \
-                        "* level is: *" + voucher.code + \
-                        "*. Please note that this voucher code is valid until *" + voucher.availability.strftime('%d/%m/%Y') + "*."
-                    }
-                else:
-                    payload = {
-                        "text": "*" + user_name + "* did not request his/her personnal voucher code yet."
-                    }
+                payload = {
+                    "blocks": [
+                        {
+                            "type": "section",
+                            "block_id": "section001",
+                            "text": {
+                                "type": "mrkdwn",
+                                "text": "Hi! Here are personal voucher codes for <@" + user_udid + ">"
+                            }
+                        },
+                        {
+                            "type": "section",
+                            "block_id": "section002",
+                            "fields": user.formatSlackFields()
+                        }
+                    ]
+                }
             else:
                 payload = {
-                    "text": "Hi! Unfortunately we couldn't find the user *" + user_name + "* in our data base."
+                    "text": "Hi! Unfortunately we couldn't find the user <@" + user_udid + "> in our data base."
                 }
 
         return payload
