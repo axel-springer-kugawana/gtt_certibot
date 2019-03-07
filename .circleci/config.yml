@@ -26,7 +26,7 @@ jobs:
           root: /tmp/
           paths:
             - kugawana-gtt-certibot.zip
-  deploy:
+  deploy: &deploy
     <<: *defaults
     steps:
       - attach_workspace:
@@ -39,12 +39,27 @@ jobs:
           path: /tmp/kugawana-gtt-certibot.zip
           destination: kugawana-gtt-certibot.zip
 
+  deploy-custom-branche:
+    <<: *deploy
+
 workflows:
   version: 2
   commit_workflow:
     jobs:
       - build:
           context: kugawana_gtt-dev
+      - hold:
+          type: approval
+          requires:
+           - build
+          filters:
+            branches:
+              ignore:
+                - master
+      - deploy-custom-branche:
+          context: kugawana_gtt-prod
+          requires:
+            - hold
       - deploy:
           context: kugawana_gtt-prod
           requires:
