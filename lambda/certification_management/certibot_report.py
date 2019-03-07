@@ -1,10 +1,11 @@
 import logging
-from slackclient import SlackClient
+import re
 import time
 from certification_management.business import Level
 from certification_management.business import UserCertification
 from certification_management.business import Voucher
 from certification_management.business import Milestone
+from slackclient import SlackClient
 from utils.configuration import Configuration
 from utils.kugawana_inventory_tools import KugawanaInventoryTool
 
@@ -79,17 +80,25 @@ class CertibotReport:
                 + global_message
             users_details = "\n".join(["<@" + user.user_id + ">" for user in users_without_gift])
 
-            # Check profile synch of all users with voucher
-            users_with_profile_not_tracked = list()
+            # Check profile synch of all users with voucher code
+            users_out_of_sync = list()
+            users_profile_voucher_not_matched = list()
             for user in users_with_voucher:
                 if not user.profile_update_date:
                     try:
                         profile = self.sc.api_call(method="users.profile.get", user=user.user_id)['profile']['fields']['XfELFP2WL9']['value']
                         if profile:
-                            users_with_profile_not_tracked.append(user)
+                            user_level_name = re.search(' \((.+?) level\)', profile.lower()).group(1)
+                            certification_level = [level for level in levels if level.name == user_level_name][0]
+                            if user.level_id == certification_level:
+                                users_out_of_sync.append(user)
+                            else:
+                                users_profile_voucher_not_matched.append(user)
                     except Exception as e:
                         self.logger.warn(e)
-            users_not_tracked = "\n".join(["<@" + user.user_id + ">" for user in users_with_profile_not_tracked])
+
+            users_out_of_sync_report = "\n".join(["<@" + user.user_id + ">" for user in users_out_of_sync])
+            users_profile_voucher_not_matched_report = "\n".join(["<@" + user.user_id + ">" for user in users_profile_voucher_not_matched])
 
             footer = "(compute time: " + \
                 str(round(end_time - start_time, 3)) + ")"
@@ -106,12 +115,18 @@ class CertibotReport:
                                                                         title="List of users who did not receive their gift",
                                                                         message=users_details,
                                                                         level="0576b9")
-                if len(users_not_tracked) > 0:
+                if len(users_out_of_sync_report) > 0:
                     self.kugawana_tool.post_notification_to_kugawana_slack(slack_channel=self.config.admin_slack_channel,
-                                                                           title="List of users with their profile not tracked",
-                                                                           message=users_not_tracked,
+                                                                           title="List of users with their profile out of sync",
+                                                                           message=users_out_of_sync_report,
                                                                            level="danger")
+                if len(users_profile_voucher_not_matched_report) > 0:
+                    self.kugawana_tool.post_notification_to_kugawana_slack(slack_channel=self.config.admin_slack_channel,
+                                                                           title="List of users with their profile not matching their voucher level",
+                                                                           message=users_profile_voucher_not_matched_report,
+                                                                           level="warning")
             else:
                 print(admin_message)
                 print(users_details)
-                print(users_not_tracked)
+                print(users_out_of_sync_report)
+                print(users_profile_voucher_not_matched_report)
