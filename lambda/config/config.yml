@@ -1,3 +1,4 @@
 aws_secret_name: prod/gtt/certibot
 aws_secret_region: eu-west-1
+users_slack_channel: C9Y2GCRFA
 limited_mode: False

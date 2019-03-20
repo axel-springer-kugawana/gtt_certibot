@@ -24,6 +24,7 @@ class CertibotReport:
         self.sc = SlackClient(self.config.slack_app_token)
 
     def launch(self, reportType):
+
         start_time = time.time()
         levels = Level.getAll()
         vouchers = Voucher.getAll()
@@ -100,6 +101,22 @@ class CertibotReport:
             users_out_of_sync_report = "\n".join(["<@" + user.user_id + ">" for user in users_out_of_sync])
             users_profile_voucher_not_matched_report = "\n".join(["<@" + user.user_id + ">" for user in users_profile_voucher_not_matched])
 
+            # Check profile of all users from Slack
+            external_users_out_of_sync = list()
+            slack_users_id = self.sc.api_call(method="channels.info", channel=self.config.users_slack_channel)['channel']['members']
+            for slack_user_id in slack_users_id:
+                if not slack_user_id in [user.user_id for user in users]:
+                    # We check only users not in the initiative (for whom we do not have an entry is the database)
+                    try:
+                        profile = self.sc.api_call(method="users.profile.get", user=slack_user_id)['profile']['fields']['XfELFP2WL9']['value']
+                        if profile:
+                            user_level_name = re.search(' \((.+?) level\)', profile.lower()).group(1)
+                            certification_level = [level for level in levels if level.name == user_level_name][0]
+                            external_users_out_of_sync.append(slack_user_id)
+                    except Exception as e:
+                        self.logger.warn(e)
+            external_users_out_of_sync_report = "\n".join(["<@" + external_user_out_of_sync + ">" for external_user_out_of_sync in external_users_out_of_sync])
+
             footer = "(compute time: " + \
                 str(round(end_time - start_time, 3)) + ")"
 
@@ -125,8 +142,13 @@ class CertibotReport:
                                                                            title="List of users with their profile not matching their voucher level",
                                                                            message=users_profile_voucher_not_matched_report,
                                                                            level="warning")
+                if len(external_users_out_of_sync_report) > 0:
+                    self.kugawana_tool.post_notification_to_kugawana_slack(slack_channel=self.config.admin_slack_channel,
+                                                                           title="List of external users with AWS certifiation on their profile",
+                                                                           message=external_users_out_of_sync_report)
             else:
-                print(admin_message)
-                print(users_details)
-                print(users_out_of_sync_report)
-                print(users_profile_voucher_not_matched_report)
+                print("admin_message:\n" + admin_message)
+                print("users_details:\n" + users_details)
+                print("users_out_of_sync_report:\n" + users_out_of_sync_report)
+                print("users_profile_voucher_not_matched_report:\n" + users_profile_voucher_not_matched_report)
+                print("external_users_out_of_sync_report:\n" + external_users_out_of_sync_report)

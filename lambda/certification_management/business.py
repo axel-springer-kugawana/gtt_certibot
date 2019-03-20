@@ -306,7 +306,7 @@ class Voucher:
 
 
 class Milestone:
-    milestones = boto3.resource('dynamodb').Table('awscert_milestone')
+    milestones = boto3.resource('dynamodb').Table('certibot_milestone')
 
     def __init__(self, id, date, goal: int):
         self.id = id

@@ -22,6 +22,7 @@ class Configuration:
         self.post_to_slack = config['post_to_slack']
         self.slack_channel = config['slack_channel']
         self.admin_slack_channel = config['admin_slack_channel']
+        self.users_slack_channel = config['users_slack_channel']
         aws_secret_name = config['aws_secret_name']
         aws_secret_region = config['aws_secret_region']
 
