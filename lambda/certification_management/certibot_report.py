@@ -144,7 +144,7 @@ class CertibotReport:
                                                                            level="warning")
                 if len(external_users_out_of_sync_report) > 0:
                     self.kugawana_tool.post_notification_to_kugawana_slack(slack_channel=self.config.admin_slack_channel,
-                                                                           title="List of external users with AWS certifiation on their profile",
+                                                                           title="List of external users with AWS certification on their profile",
                                                                            message=external_users_out_of_sync_report)
             else:
                 print("admin_message:\n" + admin_message)
