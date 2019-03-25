@@ -34,7 +34,7 @@ jobs:
       - checkout
       - run:
           name: Deploy lambda
-          command: aws s3 cp s3://kugawana-gtt-dev-infra/scripts/lambda/deploy-py.sh - | bash
+          command: aws s3 cp s3://kugawana-gtt-dev-infra/scripts/lambda/deploy-py.sh - | bash -s $CIRCLE_BRANCH
       - store_artifacts:
           path: /tmp/kugawana-gtt-certibot.zip
           destination: kugawana-gtt-certibot.zip

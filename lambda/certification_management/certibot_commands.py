@@ -7,11 +7,12 @@ from certification_management.business import Level
 from certification_management.business import User
 from certification_management.business import UserCertification
 from certification_management.business import Voucher
+from slackclient import SlackClient
 from utils.configuration import Configuration
 
 
 class CertibotCommands:
-    def __init__(self, environment, token, user_id, command, parameter, response_url):
+    def __init__(self, environment, token, user_id, command, parameter, response_url, trigger_id):
         # Logging configuration
         logging.basicConfig()
         self.logger = logging.getLogger()
@@ -20,12 +21,16 @@ class CertibotCommands:
         # Application configuration
         self.config = Configuration(self.logger, environment)
 
+        # Tools configuration
+        self.sc = SlackClient(self.config.slack_app_token)
+
         # Slash command informations
         self.token = token
         self.user_id = user_id
         self.command = command
         self.parameter = parameter
         self.response_url = response_url
+        self.trigger_id = trigger_id
 
     def launch(self):
         slash_response = ""
@@ -42,6 +47,9 @@ class CertibotCommands:
             elif self.command == '/sendgift':
                 slash_response = self.sendGift()
 
+            elif self.command == '/adduser':
+                self.addUser()
+
             else:
                 slash_response = {
                     "text": "Unknown command (*" + self.command + "*)"
@@ -51,17 +59,12 @@ class CertibotCommands:
                 "text": "I'm under construction for now. Please be patient. ;)"
             }
 
-        if not slash_response:
-            slash_response = {
-                "text": "Oops! Something went wrong, please try again." + \
-                "If you are still facing trouble by the second time please contact <@UBRJ09SBE>."
+        if slash_response:
+            headers = {
+                "content-type": "application/json",
             }
-
-        headers = {
-            "content-type": "application/json",
-        }
-        response = requests.request("POST", self.response_url, data=json.dumps(slash_response), headers=headers)
-        self.logger.info(response)
+            response = requests.request("POST", self.response_url, data=json.dumps(slash_response), headers=headers)
+            self.logger.info(response)
 
     def getVoucher(self):
         payload = None
@@ -195,3 +198,54 @@ class CertibotCommands:
                 }
 
         return payload
+
+    def addUser(self):
+        # Limited to admin users
+        if not self.user_id in self.config.admin_users:
+            payload = {
+                "text": "Sorry this command is limited to the bot administrators."
+            }
+
+        else:
+            dialog = {
+                "callback_id": "adduser",
+                "title": "Add a Certibot user",
+                "submit_label": "Add",
+                "elements": [
+                    {
+                    "label": "Choose a user",
+                    "type": "select",
+                    "data_source": "users",
+                    "name": "user_id"
+                    },
+                    {
+                        "label": "Choose a certification level",
+                        "name": "certification_level",
+                        "type": "select",
+                        "option_groups": [
+                            {
+                                "label": "AWS",
+                                "options": [
+                                    {
+                                        "label": "Foundational",
+                                        "value": 1
+                                    },
+                                    {
+                                        "label": "Associate",
+                                        "value": 3
+                                    },
+                                    {
+                                        "label": "Professionnal",
+                                        "value": 2
+                                    },
+                                    {
+                                        "label": "Speciaity",
+                                        "value": 4
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+            self.sc.api_call(method="dialog.open", trigger_id=self.trigger_id, dialog=dialog)

@@ -54,7 +54,7 @@ class Level:
         self.stars = stars
 
     def __str__(self):
-        return "Id: " + self.id + ", name: " + self.name + ", certification_id: " + self.certification_id + ", stars: " + self.stars
+        return "Id: " + str(self.id) + ", name: " + self.name + ", certification_id: " + str(self.certification_id) + ", stars: " + str(self.stars)
 
     def add(self):
         Level.levels.put_item(Item={'id': self.id, 'name': self.name, 'certification_id': self.certification_id, 'stars': self.stars})
