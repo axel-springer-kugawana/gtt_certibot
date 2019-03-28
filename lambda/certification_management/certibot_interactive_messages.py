@@ -1,3 +1,4 @@
+import datetime
 import json
 import logging
 import re
@@ -39,6 +40,8 @@ class CertibotInteractiveMessages:
         and not(self.config.limited_mode and not self.user_id in self.config.admin_users):
             if self.callback_id == 'adduser':
                 response = self.addUser(self.form['user_id'], int(self.form['certification_level']))
+            if self.callback_id == 'addvouchers':
+                response = self.addVouchers(self.form['voucher_codes'].split(','), self.form['availability_date'], int(self.form['certification_level']))
             else:
                 response = {
                     "text": "Unknown callback_id (*" + self.callback_id + "*)"
@@ -78,5 +81,28 @@ class CertibotInteractiveMessages:
             response = {
                 "text": "There is an error while adding <@" + self.form['user_id'] + ">"
             }
+
+        return response
+
+    def addVouchers(self, voucher_codes, availability_date, certification_level_id):
+        response = ""
+
+        success_list = list()
+        error_list = list()
+        for voucher_code in voucher_codes:
+            try:
+                if Voucher(voucher_code, certification_level_id, availability_date).add():
+                    success_list.append(voucher_code)
+                else:
+                    error_list.append(voucher_code)
+            except:
+                error_list.append(voucher_code)
+
+        message = str(len(success_list)) + " voucher codes added with success."
+        if error_list and len(error_list) > 0:
+            message += "\n" + str(len(error_list)) + " voucher codes not imported:\n" + '\n'.join(error_list)
+        response = {
+            "text": message
+        }
 
         return response

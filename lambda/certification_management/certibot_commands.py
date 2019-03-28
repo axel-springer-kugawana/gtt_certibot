@@ -50,6 +50,9 @@ class CertibotCommands:
             elif self.command == '/adduser':
                 self.addUser()
 
+            elif self.command == '/addvouchers':
+                self.addVouchers()
+
             else:
                 slash_response = {
                     "text": "Unknown command (*" + self.command + "*)"
@@ -213,10 +216,67 @@ class CertibotCommands:
                 "submit_label": "Add",
                 "elements": [
                     {
-                    "label": "Choose a user",
-                    "type": "select",
-                    "data_source": "users",
-                    "name": "user_id"
+                        "label": "Choose a user",
+                        "type": "select",
+                        "data_source": "users",
+                        "name": "user_id"
+                    },
+                    {
+                        "label": "Choose a certification level",
+                        "name": "certification_level",
+                        "type": "select",
+                        "option_groups": [
+                            {
+                                "label": "AWS",
+                                "options": [
+                                    {
+                                        "label": "Foundational",
+                                        "value": 1
+                                    },
+                                    {
+                                        "label": "Associate",
+                                        "value": 3
+                                    },
+                                    {
+                                        "label": "Professionnal",
+                                        "value": 2
+                                    },
+                                    {
+                                        "label": "Speciaity",
+                                        "value": 4
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+            self.sc.api_call(method="dialog.open", trigger_id=self.trigger_id, dialog=dialog)
+
+    def addVouchers(self):
+        # Limited to admin users
+        if not self.user_id in self.config.admin_users:
+            payload = {
+                "text": "Sorry this command is limited to the bot administrators."
+            }
+
+        else:
+            dialog = {
+                "callback_id": "addvouchers",
+                "title": "Add a Certibot voucher",
+                "submit_label": "Add",
+                "elements": [
+                    {
+                        "label": "Voucher codes",
+                        "type": "textarea",
+                        "name": "voucher_codes",
+                        "hint": "Provide list of voucher codes separated by comma (,)."
+                    },
+                    {
+                        "label": "Availability date",
+                        "name": "availability_date",
+                        "type": "text",
+                        "placeholder": "DD/MM/YYYY"
                     },
                     {
                         "label": "Choose a certification level",
