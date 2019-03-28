@@ -112,10 +112,10 @@ class CertibotReport:
                         if profile:
                             user_level_name = re.search(' \((.+?) level\)', profile.lower()).group(1)
                             certification_level = [level for level in levels if level.name == user_level_name][0]
-                            external_users_out_of_sync.append(slack_user_id)
+                            external_users_out_of_sync.append(slack_user_id + "-" + certification_level.name)
                     except Exception as e:
                         self.logger.warn(e)
-            external_users_out_of_sync_report = "\n".join(["<@" + external_user_out_of_sync + ">" for external_user_out_of_sync in external_users_out_of_sync])
+            external_users_out_of_sync_report = "\n".join(["<@" + external_user_out_of_sync.split('-')[0] + "> (*" + external_user_out_of_sync.split('-')[1] + "*)" for external_user_out_of_sync in external_users_out_of_sync])
 
             footer = "(compute time: " + \
                 str(round(end_time - start_time, 3)) + ")"
