@@ -40,7 +40,7 @@ class CertibotInteractiveMessages:
         and not(self.config.limited_mode and not self.user_id in self.config.admin_users):
             if self.callback_id == 'adduser':
                 response = self.addUser(self.form['user_id'], int(self.form['certification_level']))
-            if self.callback_id == 'addvouchers':
+            elif self.callback_id == 'addvouchers':
                 response = self.addVouchers(self.form['voucher_codes'].split(','), self.form['availability_date'], int(self.form['certification_level']))
             else:
                 response = {
